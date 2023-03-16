@@ -1,0 +1,36 @@
+{
+    "dispositivo": "Pantalla",
+    "folder": "Pantalla",
+    "sketch": "Pantalla.ino",
+    "plataforma": "esp8266",
+    "version": "2.7.4",
+    "modelo": "Nodemcu",
+    "placa": "node",
+    "fqbn": "esp8266:esp8266:nodemcu",
+    "configuration": "xtal=80,vt=flash,exception=disabled,ssl=all,eesz=4M,ip=lm2f,dbg=Disabled,lvl=None____,wipe=none,baud=115200",
+    "compilador": "xtensa-lx106-elf-g++",
+    "com": "COM",
+    "baudios": "115200",
+    "directorios": [
+        {
+            "trabajo": {
+                "dirtrabajo": "c:/Users/Julian/Desktop/Pantalla",
+                "dirvscode": "c:/Users/Julian/Desktop/Pantalla/.vscode",
+                "diroutput": "c:/Users/Julian/Desktop/Pantalla/build"
+            },
+            "plataforma": {
+                "dircompilador": "xtensa-lx106-elf-gcc/2.5.0-4-b40a506"
+            },
+            "librerias": {
+                "variants": "#usuario#/AppData/Local/Arduino15/packages/esp8266/hardware/esp8266/#version#/variants/nodemcu/",
+                "include": "#usuario#/AppData/Local/Arduino15/packages/esp8266/hardware/esp8266/#version#/tools/sdk/include/",
+                "librerias": "#usuario#/AppData/Local/Arduino15/packages/esp8266/hardware/esp8266/#version#/libraries/",
+                "cores": "#usuario#/AppData/Local/Arduino15/packages/esp8266/hardware/esp8266/#version#/cores/esp8266/",
+                "genericas": "#usuario#/#documentos#/Arduino/libraries/"
+            },
+            "forced": {
+                "forced": "#Dirusuario#/AppData/Local/Arduino15/packages/esp8266/hardware/esp8266/#Version#/cores/esp8266/Arduino.h"
+            }
+        }
+    ]
+}

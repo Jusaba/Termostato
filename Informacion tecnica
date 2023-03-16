@@ -1,0 +1,9 @@
+No se puede utilizar el sensor DS18B20 por no funcionar el protocolo 'One Wire' junto al protocolo SPI que necesita la pantalla 
+
+Sensor temperatura y humedad i2c SHT20
+
+https://wiki.dfrobot.com/SHT20_I2C_Temperature_&_Humidity_Sensor__Waterproof_Probe__SKU__SEN0227
+
+Sensor temperatura y humedad i2c sht31
+
+https://wiki.dfrobot.com/SHT31_Temperature_Humidity_Sensor_Weatherproof_SKU_SEN0385

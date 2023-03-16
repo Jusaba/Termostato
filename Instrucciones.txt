@@ -1,0 +1,60 @@
+ESP8266 con GC9A01
+
+Librerias necesarias
+
+    -TFT_eSPI-master
+    - Adafruit_MPR121-master   https://github.com/BareConductive/mpr121
+
+PANTALLA 
+--------
+
+Reliazar las siguientes conexiones
+
+
+        LCD                 nodemcu
+        ---            ----------------- 
+        VCC             3V3
+        GND             GND
+        DIN             MOSI/GPIO13/D7
+        CLK             SCLK/GPIO14/D5
+        CS              GPIO12/D6
+        DC              GPIO0/D3
+        RST             GPIO2/D4
+        BL              3V3
+
+
+Es necesario configurar TFT_eSPI de la sieguiente forma
+
+En User_Setup.h 
+
+    Se debe seleccionar el controlador GC9A01. Solo puede haber un controlador seleccionado y para ello 
+        - Comentar la linea #define ILI9341_DRIVER 
+        - Descomentar la linea #define GC9A01_DRIVER
+
+    Se deben definir las dimensiones de la pantalla 
+        - Descomentar la linea #define TFT_WIDTH  240    
+        - Descomentar la linea #define TFT_HEIGHT 240
+
+    y en el mismo En User_Setup.h cambiar las configuraciones de pins
+
+    // For NodeMCU - use pin numbers in the form PIN_Dx where Dx is the NodeMCU pin designation
+    #define TFT_CS   PIN_D6  // PARA PODER USAR I2C SE DEBE LIBERAR EL PIN_D1 Y TFT_CS LO CONECTAMOS A GPIO12/D6. Inicialmente se usaba PIN_D1 liberado y pasado a PIN_D6
+    #define TFT_DC   PIN_D3  
+    //#define TFT_RST  PIN_D4  | Recuperamos el Pin D4  para otros usos 
+    #define TFT_RST  -1        |   
+
+TOUCH 
+-----
+
+Reliazar las siguientes conexiones
+
+
+        TOUCH          nodemcu
+        ---            ----------------- 
+        VCC             3V3
+        IRQ             GPIO10/SD3
+        SCL             GPIO5/SCL
+        SDA             GPIO4/SDA
+        GND             GND
+        
+ ES70 2100 4307 6921 0002 7593

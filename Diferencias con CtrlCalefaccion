@@ -1,0 +1,29 @@
+En SensorSHT20  se han añadido las fucniones publicas
+
+        void EnableAlarm (void);
+        void DisableAlarm (void);
+        boolean GetAlarm (void);
+
+        void Automatico (void);
+        void Manual (void);
+        boolean GetAutomaticoManual (void);
+        float GetTemperaturaInstantanea (void);
+
+        void SetConsigna (float nConsigna);
+        float GetConsigna (void);  
+
+
+
+        Se añade en private la variable 
+        
+        _lAutomaticoManual
+        float _Consigna
+
+En Serverpic.h se cambia la estructura de sensor, se añade
+
+                float Consigna;
+		boolean lEnableAlarma;											   /**< Flag de alarma deshabilitada/habilitada (0/1)*/
+		boolean lAutomaticoManual;	
+                boolean lEncendido									   /**< Flag Automatico/Manual (0/1) */	
+
+
