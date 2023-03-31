@@ -96,7 +96,9 @@
 
 
 
-	
+	//========================
+	//Funciones de Dispositivo (UNIVERSALES)
+	//========================	
 	boolean GetDispositivo (void);
 	void DispositivoOn (void);
 	void DispositivoOff (void);
@@ -144,6 +146,7 @@
 		boolean lPantalla = 1;												//Pantalla apagada/encendida (0/1)
 	 	boolean lPantallaEncendida = 0;										//Flag que indica que se debe reiniciar la pantalla cuando se sale de estado off
 	#endif	
+
 	/**
 	******************************************************
 	* Estructura Datos sensores
@@ -165,16 +168,30 @@
 
 	DataSensor DatosSensor;													//Definimos la variable DatosSensor 
 
+	//====================================================================
+	//Funciones para grabar datos de sensores en EPROM
+	//La grabacion en Eprom se ha sustituido por la grabacion  en Servidor
+	//por lo que estas funciones han dejado de utilizarse en este modulo
+	//====================================================================
    	void GrabaDatosSensores ( DataSensor oDatos);
 	DataSensor LeeDatosSensores ( void );
 
+	//===========================================
+	//Funciones particulares de display y touch
+	//===========================================
     void ICACHE_RAM_ATTR ScanPulsa (void);
-    void DisplayInicio (void);
-	void DisplayDatosSensor ( DataSensor eDatosSensor );
-   
+ 	void DisplayDatosSensor ( float nTemperatura,  DataSensor eDatosSensor );
+    void DisplayDatosSensorOff ( DataSensor eDatosSensor );
+
    	DataSensor ReadDatosSensores ( void );
 	String ReadVariable (String cVariable);
 	void PrintDatosSensor (DataSensor oDatos );
+
+	void AlarmaOn (void);
+	void AlarmaOff (void);
+	void CalefaccionOn (void);
+	void CalefaccionOff (void);
+
 
    boolean lAlarma = 0;
 
@@ -203,7 +220,9 @@
 	String ModeloESP = Modelo;
 	String Board = Placa;
 
-
+	//======================================================
+	//Funciones de dispositivo
+	//======================================================
 
     /**
     ******************************************************
@@ -235,6 +254,8 @@
     {
      	lOnOff=0;
     }
+
+
 
     /**
     ******************************************************
@@ -399,6 +420,7 @@ PrintDatosSensor( oDatos );
 	{
 		DataSensor oDatosTmp = oDatos;
 		float Temp;
+		boolean lTemp;
 /*
 		if ( oDatosTmp.TermometroOnOff !=  )
 		{
@@ -435,18 +457,35 @@ PrintDatosSensor( oDatos );
 			oDatosTmp.Offset = Temp;
 			MensajeServidor("save-:-Offset-:-"+(String)Temp);
 		}		
+		
+		lTemp = Display.GetAutomaticoManual();
+		if (oDatosTmp.lAutomaticoManual != lTemp )
+		{
+			oDatosTmp.lAutomaticoManual = lTemp;
+			if (lTemp)
+			{
+				MensajeServidor("save-:-lAutomaticoManual-:-1");
+			}else{
+				MensajeServidor("save-:-lAutomaticoManual-:-0");
+			}	
+		}
+		lTemp = Display.GetOnOff();
+		if (oDatosTmp.lOnOff != lTemp )
+		{
+			oDatosTmp.lOnOff = lTemp;
+			if (lTemp)
+			{
+				MensajeServidor("save-:-lOnOff-:-1");
+			}else{
+				MensajeServidor("save-:-lOnOff-:-0");
+			}	
+		}		
 		return(oDatosTmp);
 	}
 
 
 	#ifdef GA940_MPR121
-		void DisplayInicio ( void )
-		{
-  			Display.WriteTxtOffset(0);
-  			Display.DisplayMarcas (22, 19, 5, 3);
-  			Display.WriteTxtManual();
-  			Display.WriteTxtOff();
-		}
+	
 
 		void DisplayDatosSensor ( float nTemperatura,  DataSensor eDatosSensor )
 		{
@@ -464,9 +503,17 @@ PrintDatosSensor( oDatos );
 				Display.WriteTxtAutomatico();
 			}
 			Display.WriteTxtOffset(eDatosSensor.Offset);
-			Display.WriteTxtOff();
+			if ( eDatosSensor.lOnOff )
+			{
+				Display.WriteTxtOff();
+			}else{
+				Display.WriteTxtOn();
+			}	
 		}
-
+		void DisplayDatosSensorOff ( DataSensor eDatosSensor )
+		{
+			Display.DisplayMarcas();
+		}
 		void ICACHE_RAM_ATTR ScanPulsa (void)
 		{
     	  Serial.println("Interrupcion");
@@ -476,5 +523,27 @@ PrintDatosSensor( oDatos );
     	  //attachInterrupt(digitalPinToInterrupt(PinInterrupt), ScanPulsa, FALLING);
   		}
 	#endif
+
+	void CalefaccionOn (void)
+	{
+		String cTexto = "telegram-:-Julian-:-Calefaccion On";
+		MensajeServidor(cSalida);
+	}
+	void CalefaccionOff (void)
+	{
+		String cTexto = "telegram-:-Julian-:-Calefaccion Off";
+		MensajeServidor(cSalida);
+	}
+	void AlarmaOn (void)
+	{
+		String cTexto = "telegram-:-Julian-:-Alarma On";
+		MensajeServidor(cSalida);
+	}
+	void AlarmaOff (void)
+	{
+		String cTexto = "telegram-:-Julian-:-Alarma Off";
+		MensajeServidor(cSalida);
+	}
+
 
 #endif    

@@ -5,7 +5,7 @@
 ******************************************************
 *@brief Constructor de la clase
 *
-*@param PinDS18B20.- Pin que se va a utilizar para la comunicacion OneWire
+*@param Direccion.- Direccion I2C del sensor SHT20
 *@param nMuestras.- Nuemro de muestras que se van a utilizar para obtener el valor medio del sensor
 *
 */ 
@@ -24,7 +24,7 @@ SENSORSHT20::SENSORSHT20( byte Direccion,  int nMuestras )
 *
 *Este constructor. a diferencia del anterior no recibe el parametro nMuestras que por defecto lo fija a 10
 *
-*@param PinDS18B20.- Pin que se va a utilizar para la comunicacion OneWire
+*@param Direccion.- Direccion I2C del sensor SHT20
 *
 */ 
 SENSORSHT20::SENSORSHT20( byte Direccion )
@@ -42,7 +42,8 @@ SENSORSHT20::SENSORSHT20( byte Direccion )
 ******************************************************
 *@brief realiza un ciclo entero de medidas para los datos iniciales
 *
-*
+* Realiza en numero de medidas this->_nMuestrasMedida para obtener 
+* la media
 */
 void SENSORSHT20::MedidasInicio (void)
 {
@@ -65,19 +66,20 @@ SENSORSHT20::~SENSORSHT20( )
 
 /**
 ******************************************************
-*@brief Arranque del sensor
+*@brief Arranque del sensor SHT20
 *
 */
 void SENSORSHT20::begin (void)
 {
-	_sht20.initSHT20();                                  // Init SHT20 Sensor
+	_sht20.initSHT20();                                  // Inicia SHT20 Sensor
 
 }
 
 /**
 ******************************************************
-*@brief Fija los umbrales Superior e Inferior establecidos para este sensor. Asigna el numero 
+*@brief Fija los umbrales Superior e Inferior establecidos para la alarma del sensor. Asigna el numero 
 *de veces consecutivas que el sensor se encuentra en una zona para darla como valida
+*Si ekl parametro de numero de ocurrencias es 0, se toma por defecto 5 ocurrencias 
 *
 *@param UmbralSuperior.- Valor del umbral superior establecido para este sensor
 *@param UmbralInferior.- Valor del umbral inferior establecido para este sensor
@@ -131,45 +133,45 @@ void SENSORSHT20::SetUmbrales (float UmbralSuperior, float UmbralInferior )
 */ 
 void SENSORSHT20::_Zona ()
 {
-		if ( this->nMedida < this->UmbralInferior  )
+		if ( this->nMedida < this->UmbralInferior  )										// Si la medida esta por debajo del umbral inferior ( Zona 1 )
 		{	
-			this->_nOcurrenciasZona2 = 0;
+			this->_nOcurrenciasZona2 = 0;													//Ponemos a 0 el numero de ocurrencias en las otras zonas ( 2 y 3 )
 			this->_nOcurrenciasZona3 = 0;
-			if ( this->_nOcurrenciasZona1 > this->_nOcurrenciasParam )
+			if ( this->_nOcurrenciasZona1 > this->_nOcurrenciasParam )						//Si el numero de ocrrencias en la zona 1 supera las ocurrencias fijadas pora considerar la zona estable
 			{
-				this->nZona = 1;
-			}else{
-				this->_nOcurrenciasZona1++;			
+				this->nZona = 1;															//Establecemos como zona estable la zona 1
+			}else{																			//Si no
+				this->_nOcurrenciasZona1++;													//Incrementamos el numero de ocurrencias en zona 1
 			}
-		}else{
-			if ( this->nMedida > this->UmbralSuperior )
+		}else{																				//Si no esta por debajo del umbral inferior
+			if ( this->nMedida > this->UmbralSuperior )										//Comprobamos si la medida esta por encima del umbral superior ( Zona 3 ) y si está
 			{
-				this->_nOcurrenciasZona1 = 0;
+				this->_nOcurrenciasZona1 = 0;												//Ponemos a 0 el numero de ocurrencias en las otras zonas ( 1 y 2 )								
 				this->_nOcurrenciasZona2 = 0;
-				if (this->_nOcurrenciasZona3 > this->_nOcurrenciasParam )
+				if (this->_nOcurrenciasZona3 > this->_nOcurrenciasParam )					//Si el numero de ocrrencias en la zona 3 supera las ocurrebncias fijadas pora considerar la zona estable
 				{
-					this->nZona = 3;
-				}else{
-					this->_nOcurrenciasZona3++;
+					this->nZona = 3;														//Establecemos como zona estable la zona 3
+				}else{																		//Si no
+					this->_nOcurrenciasZona3++;												//Incrementamos el numero de ocurrencias en zona 3
 				}	
-			}else{
-				this->_nOcurrenciasZona1 = 0;
+			}else{																			//Si no esta por debajo del umbral inferior ni por encima del umbrla superior es que esta en Zona 2
+				this->_nOcurrenciasZona1 = 0;												//Ponemos a 0 el numero de ocurrencias en las otras zonas ( 1 y 3 )
 				this->_nOcurrenciasZona3 = 0;
-				if (this->_nOcurrenciasZona2 > this->_nOcurrenciasParam )
+				if (this->_nOcurrenciasZona2 > this->_nOcurrenciasParam )					//Si el numero de ocrrencias en la zona 2 supera las ocurrencias fijadas pora considerar la zona estable
 				{
-					this->nZona = 2;
-				}else{
-					this->_nOcurrenciasZona2++;				
+					this->nZona = 2;														//Establecemos como zona estable la zona 2
+				}else{																		//Si no
+					this->_nOcurrenciasZona2++;												//Incrementamos el numero de ocurrencias en zona 3	
 				}	
 			}
 		}
 
 
-		if ( this->nZona != this->_nZonaAnterior )
+		if ( this->nZona != this->_nZonaAnterior )											//Si ha habido cambio de zona
 		{
-			this->_nMicrosegundosZona = micros();
-			this->_lZona = 1;
-			this->_nZonaAnterior = this->nZona;
+			this->_nMicrosegundosZona = micros();											//Registrmos el instante en el que se produce el cambio de zona 
+			this->_lZona = 1;																//Ponemos a 1 el Flag que indica que ha habido cambio de zona
+			this->_nZonaAnterior = this->nZona;												//Actualizamos la zona anterior para detectar proximo cambio
 		}
 }
 /**
@@ -342,53 +344,36 @@ boolean SENSORSHT20::_GetEstadoAlarma (void)
 	//Serial.println("Hola");
 	return (this->lAlarma);
 }
-
-//-------
-//PRUEBAS
-//-------
+/**
+******************************************************
+*@brief Realiza una medida 
+*
+*Esta funcion realiza una medida teniendo en cuenta el offset, actualiza el valor acumulado 
+*y si se ha finalizado un ciclo de medida se obtiene el valor mnedio de esas medidas
+*y se lo asigna a nMedida
+*Si esta habilitado el cambio de zona, se comprueba la zona en la que se encuentra la temperatura
+*/ 
 
 boolean SENSORSHT20::Medida (void)
 {
-//	_sht20.checkSHT20();    
-//	Serial.println ("Chequeado");
-//	float humd = _sht20.readHumidity(); 
-	this->_Valor = _sht20.readTemperature();  
+	this->_Valor = _sht20.readTemperature();  											//Hacemos una medida
 
-	if ( this->_Valor > 250 )							//Si la lectura no es logica, dareos la sonda por desconectada
+	_lSensorDesconectado = 0;															//Ponemos el flag de sensor desconectado a 0 para indicar que esta conectado. Este flag viene del DS18B20 por que se desconectaba mucho el sensor
+	this->_ValorAcumulado = this->_ValorAcumulado + this->_Valor + this->_Offset;		//Añadimos el valor de la medida realizada al acumulado teniendo en cuenta el offset
+	if  (this->_nMuestra == this->_nMuestrasMedida - 1 )								//Si se han realizado el numero de muestras establecido
 	{
-Serial.print ( "Sonda Off ");
-		_lSensorDesconectado = 1;
-		this->_ValorAcumulado=0;		
-		this->_nMuestra = 0;
-	}else{
-		_lSensorDesconectado = 0;
-		this->_ValorAcumulado = this->_ValorAcumulado + this->_Valor + this->_Offset;
-
-Serial.print("---->");
-Serial.print(this->_nMuestra);
-Serial.print("-->");
-Serial.print(this->_Valor);
-Serial.print("-->");
-Serial.println(this->_ValorAcumulado);
-
-
-		if  (this->_nMuestra == this->_nMuestrasMedida - 1 )
+		this->_Valormedio = round(this->_ValorAcumulado)/this->_nMuestrasMedida;		//Calculamos el valor medio del total de muestras
+		this->nMedida = this->_Valormedio;												//Se lo asignamos a nMedida
+  		this->_ValorAcumulado=0;														//Reseteamos el acumulado
+  		this->_nMuestra = 0;															//Reseteamos el numero de muestras
+  		if ( this->_lFlagZona )															//Si esta habilitado el cambio de zona
 		{
-			this->_Valormedio = round(this->_ValorAcumulado)/this->_nMuestrasMedida;
-			this->nMedida = this->_Valormedio;
-Serial.print("--->");
-Serial.println(this->_Valormedio);
-  			this->_ValorAcumulado=0;		
-  			this->_nMuestra = 0;
-  			if ( this->_lFlagZona )
-			{
-				this->_Zona();
-			}	
-			MensajeServidor("medida-:-Termometro-:-"+(String)(this->nMedida));
- 		}else{
-  			this->_nMuestra++;
-  		}
-	}
+			this->_Zona();																//Comprobamos la zona en la que se encuentra la medida
+		}	
+		MensajeServidor("medida-:-Termometro-:-"+(String)(this->nMedida));				//Enviamos el valor medio obtenido al servidor
+ 	}else{																				//Si todavia no hemos cumplico un cili de medidas
+  		this->_nMuestra++;																//Incrementamos la medida
+  	}
 
     
 }
@@ -408,47 +393,47 @@ Serial.println(this->_Valormedio);
 boolean SENSORSHT20::TestSensor(void)
 {
 	boolean lAlarmaAnterior = this->lAlarma;
-	this->Medida();
-	if (this->_lAlarmaEnable)						//Si la alarma esta habilitada
+	this->Medida();																		//Realizamos una medida	
+	if (this->_lAlarmaEnable)															//Si la alarma esta habilitada
 	{
-		if (this->_lTipoAlarma)						//Si el tipo de alarma es por umbral superior
+		if (this->_lTipoAlarma)															//Si el tipo de alarma es por umbral superior
 		{
-			if ( this->nZona == 3 )					//Si se encuentra en Zona 3
+			if ( this->nZona == 3 )														//Si se encuentra en Zona 3
 			{
-				if ( this->TiempoZona() >= this->_nSegundosAlarmaUmbralSuperior )
+				if ( this->TiempoZona() >= this->_nSegundosAlarmaUmbralSuperior )		//Si el tiempo en la zona 3 supera el tiempo umbral
 				{
-					this->lAlarma = 1;
+					this->lAlarma = 1;													//Pone el flag de alarma a 1
 				}
 			}
-			if ( this->nZona == 1)
+			if ( this->nZona == 1)														//Si se encuentra en zona 1
 			{
-				if ( this->TiempoZona() >= this->_nSegundosAlarmaUmbralInferior )
+				if ( this->TiempoZona() >= this->_nSegundosAlarmaUmbralInferior )		//Si el tiempo en zona 1 es superior al tiempo umbral
 				{
-					this->lAlarma = 0;
+					this->lAlarma = 0;													//Ponemos el flag de alarma a 0	
 				}				
 			}
-		}else{
-			if ( this->nZona == 1)
+		}else{																			//Si el tipo de alarma es por umbral bajo
+			if ( this->nZona == 1)														//Si esta en Zona 1
 			{
-				if ( this->TiempoZona() >= this->_nSegundosAlarmaUmbralInferior )
+				if ( this->TiempoZona() >= this->_nSegundosAlarmaUmbralInferior )		//Y se ha superado el tiempo de umbral
 				{
-					this->lAlarma = 1;
+					this->lAlarma = 1;													//Ponemo el flag de alarma a 1
 				}				
 			}			
-			if ( this->nZona == 3 )					//Si se encuentra en Zona 3
+			if ( this->nZona == 3 )														//Si se encuentra en Zona 3
 			{
-				if ( this->TiempoZona() >= this->_nSegundosAlarmaUmbralSuperior )
+				if ( this->TiempoZona() >= this->_nSegundosAlarmaUmbralSuperior )		//SI el tiempo en la zona supera el tiempo umbral
 				{
-					this->lAlarma = 0;
+					this->lAlarma = 0;													//Ponemos el flag de alarma en 0
 				}
 			}
 		}
 	}
-	if ( this->lAlarma == lAlarmaAnterior )
+	if ( this->lAlarma == lAlarmaAnterior )												//Si no ha habido cambio de estado en la alarma
 	{
-		return(0);
+		return(0);																		//devolvemos 0
 	}else{
-		return(1);
+		return(1);																		//En caso contrario devolvemos 1
 	}	
 }
 /**
@@ -473,7 +458,7 @@ boolean SENSORSHT20::TestConexionSensor(void)
 ******************************************************
 *@brief Devuelve si el Sensor esta conectado o no
 *
-* Esta función sirve para suervisar si se ha desconectado accidentalmente el sensor o se ha vuelto a conectar
+* Esta función sirve para supervisar si se ha desconectado accidentalmente el sensor o se ha vuelto a conectar
 *@return Deveulve 0 si el sensor esta conectado, 1 en caso contrario
 *
 */ 
@@ -501,7 +486,7 @@ void SENSORSHT20::EnableAlarm (void)
 */ 
 void SENSORSHT20::DisableAlarm (void)
 {
-	this->_lAlarmaEnable = 1;
+	this->_lAlarmaEnable = 0;
 }
 /**
 ******************************************************

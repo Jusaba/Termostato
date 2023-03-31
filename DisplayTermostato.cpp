@@ -28,6 +28,19 @@ DISPLAYTERMOSTATO::~DISPLAYTERMOSTATO (void)
 
 }
 
+void DISPLAYTERMOSTATO::Circulo ()
+{
+    int nTLow = TemperaturaMinima;
+    int nTHigh = TemperaturaMaxima;
+    int32_t nAnguloI = AnguloInferior;
+    int32_t nAnguloF = AnguloSuperior;
+    //int32_t nAnguloTemperatura = ( nTemperatura - nTLow )*(nAnguloF - nAnguloI)/(nTHigh - nTLow) ;
+    //this->_tft.drawSmoothArc(120, 120, 100, 95, nAnguloI, nAnguloI+nAnguloTemperatura, TFT_BLUE, TFT_DARKCYAN, false);
+    //this->_tft.drawSmoothArc(120, 120, 100, 95, nAnguloI+nAnguloTemperatura, nAnguloF, TFT_RED, TFT_DARKCYAN, false);
+    this->WriteTxtTemperatura ();
+    this->ClearTxtConsigna();
+    this->ClearTxtAlarmas();  
+} 
 /**
 ******************************************************
 * @brief Dibuja un circulo de temperatura 
@@ -172,6 +185,16 @@ void DISPLAYTERMOSTATO::Circulo ( float nTemperatura, float nTemperaturaAlarmaMa
   this->WriteTxtAlarmas(nTemperaturaAlarmaMaxima, nTemperaturaAlarmaMinima);
 }
 
+void DISPLAYTERMOSTATO::DisplayMarcas ( )
+{
+  this->_nMododVisualizacion = 1;
+  this->CreaSpriteTemperatura();
+  this->ClearMarcaTemperatura();
+  //this->WriteMarcaTemperatura ( );
+  this->_temperatura.deleteSprite();
+  this->Circulo ();
+}
+
 void DISPLAYTERMOSTATO::DisplayMarcas ( float nTemperatura )
 {
   this->_nMododVisualizacion = 1;
@@ -235,6 +258,19 @@ void DISPLAYTERMOSTATO::WriteTxtTemperatura ( float nTemperatura )
     this->_tft.setTextDatum(MC_DATUM);
     this->_tft.setTextColor(TFT_WHITE);
     this->_tft.drawString( String(nTemperatura)+" C", 120, 120, 4);
+}
+/**
+******************************************************
+* @brief Escribe el texto ----- en lugar de la temperatura
+*
+* Escribe ----- para indicar que no hay lectura de temepratura por la razon que sea
+*/
+void DISPLAYTERMOSTATO::WriteTxtTemperatura ( )
+{
+    ClearTxtTemperatura();
+    this->_tft.setTextDatum(MC_DATUM);
+    this->_tft.setTextColor(TFT_WHITE);
+    this->_tft.drawString( "------", 120, 120, 4);
 }
 /**
 ******************************************************
@@ -545,7 +581,23 @@ float DISPLAYTERMOSTATO::GetTemperaturaMinimaAlarma (void)
 }
 /**
 ******************************************************
-* @brief Devuelve la Temperatura minima de alarma
+* @brief Devuelve el flag _lAM 
+*/
+boolean DISPLAYTERMOSTATO::GetAutomaticoManual (void)
+{
+    return (this->_lAM);
+}
+/**
+******************************************************
+* @brief Devuelve el flag _lOnOff
+*/
+boolean DISPLAYTERMOSTATO::GetOnOff (void)
+{
+    return (this->_lOnOff);
+}
+/**
+******************************************************
+* @brief Devuelve el estado del Flag AutomaticoManual
 */
 float DISPLAYTERMOSTATO::GetOffset (void)
 {

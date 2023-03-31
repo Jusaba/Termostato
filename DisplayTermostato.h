@@ -49,6 +49,7 @@ class DISPLAYTERMOSTATO : public TFT_eSPI  //Definicion de la clase
         ~DISPLAYTERMOSTATO (void);
 
         void DrawLineas(void);
+        void DisplayMarcas ( );
         void DisplayMarcas ( float nTemperatura );
         void DisplayMarcas ( float nTemperatura, float nConsigna );
         void DisplayMarcas ( float nTemperatura, float nTemperaturaAlarmaMaxima, float nTemperaturaAlarmaMinima  );
@@ -69,6 +70,8 @@ class DISPLAYTERMOSTATO : public TFT_eSPI  //Definicion de la clase
         float GetTemperaturaMaximaAlarma (void);
         float GetTemperaturaMinimaAlarma (void);
         float GetOffset (void);
+        boolean GetAutomaticoManual (void);
+        boolean GetOnOff (void);
 
          int nModo;
 
@@ -82,6 +85,7 @@ class DISPLAYTERMOSTATO : public TFT_eSPI  //Definicion de la clase
         TFT_eSprite _temperatura = TFT_eSprite(&(this->_tft));
         TFT_eSprite _numeros = TFT_eSprite(&(this->_tft));
 
+        void Circulo ( );
         void Circulo ( float nTemperatura );
         void Circulo ( float nTemperatura, float nConsigna );
         void Circulo ( float nTemperatura, float nTemperaturaAlarmaMaxima, float nTemperaturaAlarmaMinima );
@@ -112,6 +116,7 @@ class DISPLAYTERMOSTATO : public TFT_eSPI  //Definicion de la clase
         TFT_eSPI _tft = TFT_eSPI();
 
 
+        void WriteTxtTemperatura ();
         void WriteTxtTemperatura (float nTemperatura );
         void ClearTxtTemperatura (void);
     

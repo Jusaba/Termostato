@@ -19,7 +19,7 @@ Reliazar las siguientes conexiones
         CLK             SCLK/GPIO14/D5
         CS              GPIO12/D6
         DC              GPIO0/D3
-        RST             GPIO2/D4
+        RST             GPIO2/D4    En realidad RST se conecta a VCC y liberamos GPIO2
         BL              3V3
 
 
