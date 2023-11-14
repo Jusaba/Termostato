@@ -12,7 +12,7 @@ DISPLAYTERMOSTATO::DISPLAYTERMOSTATO()
 {
   //_tft = tft;
   this->_tft.init(); 
-  this->_tft.setRotation(0);
+  this->_tft.setRotation(2);              //Inicialmente a 0
   this->_tft.setPivot(120, 120);
   this->_tft.fillScreen(ColorFondo);
   //this->CreaSpriteMarca();

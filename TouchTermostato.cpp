@@ -48,8 +48,8 @@ void TOUCHTERMOSTATO::begin(int AddrMPR121, int PinIRQ)
       MPR121.restoreSavedThresholds();
       MPR121_Datastream.begin(&Serial);
     } else {
-      MPR121.setTouchThreshold(20);    // Umbral para pulsado 40 ahora 50   25
-      MPR121.setReleaseThreshold(15);  // Umbral para soltado 30 ahora 40   20 
+      MPR121.setTouchThreshold(15);    // Umbral para pulsado 40 ahora 50   25  20
+      MPR121.setReleaseThreshold(10);  // Umbral para soltado 30 ahora 40   20  15 
     }
 
     MPR121.setFFI(FFI_10);              //10

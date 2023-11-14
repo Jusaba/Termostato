@@ -146,6 +146,8 @@
 		boolean lPantalla = 1;												//Pantalla apagada/encendida (0/1)
 	 	boolean lPantallaEncendida = 0;										//Flag que indica que se debe reiniciar la pantalla cuando se sale de estado off
 	#endif	
+	boolean lEstadoCalefaccion = 0;											//Flag que indica si la calefacción esta encendida o apagada ( 1/0 )
+
 
 	/**
 	******************************************************
@@ -189,6 +191,7 @@
 
 	void AlarmaOn (void);
 	void AlarmaOff (void);
+	boolean GetCalefaccion (void);
 	void CalefaccionOn (void);
 	void CalefaccionOff (void);
 
@@ -526,13 +529,27 @@ PrintDatosSensor( oDatos );
 
 	void CalefaccionOn (void)
 	{
-		String cTexto = "telegram-:-Julian-:-Calefaccion On";
-		MensajeServidor(cSalida);
+Serial.println("=======================");
+Serial.println("Calefaccion On");
+Serial.println("=======================");
+
+		lEstadoCalefaccion = 1;
+//		String cTexto = "telegram-:-Julian-:-Calefaccion On";
+//		MensajeServidor(cTexto);
 	}
 	void CalefaccionOff (void)
 	{
-		String cTexto = "telegram-:-Julian-:-Calefaccion Off";
-		MensajeServidor(cSalida);
+Serial.println("=======================");
+Serial.println("Calefaccion Off");
+Serial.println("=======================");
+
+		lEstadoCalefaccion = 0;
+//		String cTexto = "telegram-:-Julian-:-Calefaccion Off";
+//		MensajeServidor(cTexto);
+	}
+	boolean GetCalefaccion (void)
+	{
+		return (lEstadoCalefaccion);
 	}
 	void AlarmaOn (void)
 	{

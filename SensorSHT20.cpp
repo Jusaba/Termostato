@@ -336,7 +336,7 @@ boolean SENSORSHT20::GetOnOff (void)
 ******************************************************
 *@brief Funcion para conocer si la alarma esta habilitada o no 
 *
-*return.- Devuelve 1/0 para indicar si esta habilitada o no
+*return.- Devuelve 1/0 para indicar si esta en alarma o no
 */ 
 
 boolean SENSORSHT20::_GetEstadoAlarma (void)
@@ -438,7 +438,7 @@ boolean SENSORSHT20::TestSensor(void)
 }
 /**
 ******************************************************
-*@brief Devuelve si ha habido un cambio de conectado/desconectado del sensor
+*@brief Devuelve si ha habido un cambio de conectado/desconectado del sensor desde la ultima vez que se llamo a esta funcion
 *
 * Esta función sirve para suervisar si se ha desconectado accidentalmente el sensor o se ha vuelto a conectar
 *@return Deveulve 1 si ha habido cambio de estado, 0 en caso contrario

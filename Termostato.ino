@@ -76,6 +76,7 @@ void setup(void) {
 				}else{
 					oSondaTemperatura.Automatico();
 				}
+
 //				oSondaTemperatura.begin();
 				if ( lEstadisticas )													 //Si están habilitadas las estadisticas, actualizamos el numero de inicios
 				{
@@ -100,7 +101,13 @@ void setup(void) {
 
 	if (!oSondaTemperatura.ConexionSensor())												 // Si la sonda esta conectada
   	{
-		oSondaTemperatura.MedidasInicio();												 //Realiza las medidas iniciales
+		oSondaTemperatura.MedidasInicio();												 	 //Realiza las medidas iniciales
+		if ( oSondaTemperatura.GetTemperaturaInstantanea () < DatosSensor.Consigna + 0.5 )	 //Si la temperatura real esta por debajo de la consigna
+		{
+			CalefaccionOn();																 //Encendemos la calefaccion	
+		}else{																				 //Si no 	
+			CalefaccionOff();																 //apagamos la calefaccion
+		}
 /*
 		#ifdef GA940_MPR121
 			DisplayDatosSensor (oSondaTemperatura.nMedida, DatosSensor);
@@ -221,18 +228,18 @@ void loop() {
 				{
 					nTemporizacionMedida++;
 					delay(100);
-					if (lPush) 											// Si esta habilitado el push
+					if (lTelegram) 											// Si esta habilitado el push
 					{
 						lAlarma = oSondaTemperatura._GetEstadoAlarma();
-						Serial.print("lAlarma: ");
+						Serial.print("lAlarma: ");conectado
 						Serial.println(lAlarma);
 						if (oSondaTemperatura._GetEstadoAlarma())		// Notificamos la alarma o la reposicion
 						{
-							cSalida = "sendpush-:-" + cPush + "-:-" + cDispositivo + "-:-Alarma temperatura  " + (String)(oSondaTemperatura.nMedida);
+							cSalida = "telegram-:-" + cPush + "-:-Alarma temperatura  " + (String)(oSondaTemperatura.nMedida);
 						}
 						else
 						{
-							cSalida = "sendpush-:-" + cPush + "-:-" + cDispositivo + "-:-Alarma temperatura  repuesta " + (String)(oSondaTemperatura.nMedida);
+							cSalida = "telegram-:-" + cPush +"-:-Alarma temperatura  repuesta " + (String)(oSondaTemperatura.nMedida);
 						}
 						MensajeServidor(cSalida);
 						cSalida = String(' ');
@@ -243,17 +250,17 @@ void loop() {
 				{
 					DisplayDatosSensor (oSondaTemperatura.nMedida, DatosSensor);		//Actualizamos el display
 				}
-				if (lPush) // Si esta habilitado el push
+				if (lTelegram) // Si esta habilitado el push
 				{
 					if (oSondaTemperatura.TestConexionSensor()) 						//Comprobamos si la sonda sigue conectada
 					{
 						if (oSondaTemperatura.ConexionSensor()) 						// Notificamso si ha habido algun cambio en el estado de la sonda
 						{
-							cSalida = "sendpush-:-" + cPush + "-:-" + cDispositivo + "-:-Sensor desconectado  ";
+							cSalida = "telegram-:-" + cPush + "-:-Sensor desconectado  ";
 						}
 						else
 						{
-							cSalida = "sendpush-:-" + cPush + "-:-" + cDispositivo + "-:-Sensor conectado  ";
+							cSalida = "telegram-:-" + cPush + "-:-Sensor conectado  ";
 						}
 					}
 				}	

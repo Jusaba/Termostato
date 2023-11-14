@@ -57,4 +57,4 @@ Reliazar las siguientes conexiones
         SDA             GPIO4/SDA
         GND             GND
         
- ES70 2100 4307 6921 0002 7593
+ 
