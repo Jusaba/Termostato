@@ -19,7 +19,7 @@ void TOUCHTERMOSTATO::begin(int AddrMPR121, int PinIRQ)
             Serial.println("No hay error");
             break;
           case ADDRESS_UNKNOWN:
-            Serial.println("ireccion incorrecta");
+            Serial.println("Direccion incorrecta");
             break;
           case READBACK_FAIL:
             Serial.println("Fallo ReadBack");

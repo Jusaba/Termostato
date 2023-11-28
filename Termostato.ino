@@ -3,26 +3,26 @@
 
 
 
-
-//SENSORDS18B20 oSondaTemperatura(2, 3);
-
-SENSORSHT20 oSondaTemperatura (5, 5); 			//Direccion por defecto 0x40
-
+#ifdef DS18B20
+	SENSORDS18B20 oSondaTemperatura(2, 3);
+#endif
+#ifdef SHT20 
+	SENSORSHT20 oSondaTemperatura (5, 5); 			//Direccion por defecto 0x40
+#endif
 
 
 
 
 
 void setup(void) {
-  
- 
-	
+   	
   	#ifdef Debug			// Usamos el puereto serie solo para debugar
 	  Serial.begin(9600); // Si no debugamos quedan libres los pines Tx, Rx para set urilizados
 	  Serial.println("Iniciando........");
   	#endif
 	EEPROM.begin(256); // Reservamos zona de EEPROM
-	//	BorraDatosEprom ( 0, 256);										//Borramos 256 bytes empezando en la posicion 0
+	//BorraDatosEprom ( 0, 256);										//Borramos 256 bytes empezando en la posicion 0
+	pinMode(PinReset, INPUT_PULLUP);           							//Configuramos el pin de reset como entrada
 	if ( LeeByteEprom ( FlagConfiguracion ) == 0 )						//Comprobamos si el Flag de configuracion esta a 0
 	{																	// y si esta
 		ModoAP();														//Lo ponemos en modo AP
@@ -54,29 +54,30 @@ void setup(void) {
 				lInfoTec = aCfg.lInfo;
 				cSalida = LeeValor();
 				//DatosSensor = LeeDatosSensores ();									 //Leemos los datos del sensor y los registramos en la sonda. Grabados en Eprom
-				DatosSensor = ReadDatosSensores ();										 //Leemos los datos del sensor y los registramos en la sonda. Grabados en Servidor
-				if (DatosSensor.Offset > 15 || DatosSensor.Offset < -15 )				 //Si los datos de offset son incongruentes se fijan a 0 
-				{
-					DatosSensor.Offset = 0;												
-					MensajeServidor("save-:-Offset-:-0");								 //Grabamos en el servidor Offset 0
-					//GrabaDatosSensores(DatosSensor);									 //Graba los datos en EPROM
-				}
-				oSondaTemperatura.SetOffset(DatosSensor.Offset);
-				oSondaTemperatura.SetUmbrales(DatosSensor.UmbralSuperiorTemperatura, DatosSensor.UmbralInferiorTemperatura, 5 );
-				oSondaTemperatura.Alarma ( DatosSensor.lTipoAlarmaTemperatura, DatosSensor.AlarmaUSTemperatura, DatosSensor.AlarmaUITemperatura );
-				if(DatosSensor.lEnableAlarma)
-				{
-					oSondaTemperatura.EnableAlarm();
-				}else{
-					oSondaTemperatura.DisableAlarm();
-				}
-				if(DatosSensor.lAutomaticoManual)
-				{
-					oSondaTemperatura.Manual();
-				}else{
-					oSondaTemperatura.Automatico();
-				}
-
+				#ifdef SensorTemperatura
+					DatosSensor = ReadDatosSensores ();										 //Leemos los datos del sensor y los registramos en la sonda. Grabados en Servidor
+					if (DatosSensor.Offset > 15 || DatosSensor.Offset < -15 )				 //Si los datos de offset son incongruentes se fijan a 0 
+					{
+						DatosSensor.Offset = 0;												
+						MensajeServidor("save-:-Offset-:-0");								 //Grabamos en el servidor Offset 0
+						//GrabaDatosSensores(DatosSensor);									 //Graba los datos en EPROM
+					}
+					oSondaTemperatura.SetOffset(DatosSensor.Offset);
+					oSondaTemperatura.SetUmbrales(DatosSensor.UmbralSuperiorTemperatura, DatosSensor.UmbralInferiorTemperatura, 5 );
+					oSondaTemperatura.Alarma ( DatosSensor.lTipoAlarmaTemperatura, DatosSensor.AlarmaUSTemperatura, DatosSensor.AlarmaUITemperatura );
+					if(DatosSensor.lEnableAlarma)
+					{
+						oSondaTemperatura.EnableAlarm();
+					}else{
+						oSondaTemperatura.DisableAlarm();
+					}
+					if(DatosSensor.lAutomaticoManual)
+					{
+						oSondaTemperatura.Manual();
+					}else{
+						oSondaTemperatura.Automatico();
+					}
+				#endif
 //				oSondaTemperatura.begin();
 				if ( lEstadisticas )													 //Si están habilitadas las estadisticas, actualizamos el numero de inicios
 				{
@@ -99,21 +100,18 @@ void setup(void) {
       	}
     }    
 
-	if (!oSondaTemperatura.ConexionSensor())												 // Si la sonda esta conectada
-  	{
-		oSondaTemperatura.MedidasInicio();												 	 //Realiza las medidas iniciales
-		if ( oSondaTemperatura.GetTemperaturaInstantanea () < DatosSensor.Consigna + 0.5 )	 //Si la temperatura real esta por debajo de la consigna
-		{
-			CalefaccionOn();																 //Encendemos la calefaccion	
-		}else{																				 //Si no 	
-			CalefaccionOff();																 //apagamos la calefaccion
-		}
-/*
-		#ifdef GA940_MPR121
-			DisplayDatosSensor (oSondaTemperatura.nMedida, DatosSensor);
-		#endif  
-*/
-  	}
+	#ifdef SensorTemperatura
+		if (!oSondaTemperatura.ConexionSensor())												 // Si la sonda esta conectada
+  		{
+			oSondaTemperatura.MedidasInicio();												 	 //Realiza las medidas iniciales
+			if ( oSondaTemperatura.GetTemperaturaInstantanea () < DatosSensor.Consigna + 0.5 )	 //Si la temperatura real esta por debajo de la consigna
+			{
+				CalefaccionOn();																 //Encendemos la calefaccion	
+			}else{																				 //Si no 	
+				CalefaccionOff();																 //apagamos la calefaccion
+			}
+  		}
+	#endif	
 
 	//Si tenemos la pantalla G4940_MPR121
   	#ifdef GA940_MPR121
@@ -124,13 +122,11 @@ void setup(void) {
 		DisplayDatosSensor (oSondaTemperatura.nMedida, DatosSensor);
 		Display.DisplayOn(); 															//Encendemos la pantalla												
 		lPantallaEncendida = 1;															//Reflejamos en el flag lPantallaEncendida qwue la pantalla esta encendida
-  	#endif
-
-  
-
-	lPantalla = 1;
-	nTiempoPantalla = millis();
-
+  	#endif  
+	#ifdef GA940_MPR121
+		lPantalla = 1;
+		nTiempoPantalla = millis();
+	#endif
   
 }
 
@@ -147,15 +143,16 @@ void loop() {
 			//Display.DrawLineas();															//Dibujamos lineas
 			Display.DisplayNormal();														//Dibujamos la pantalla normal
 			DisplayDatosSensor (oSondaTemperatura.nMedida, DatosSensor);					//Reflejamos los datos en la pantalla
+			Display.DisplayOff();															//Apagamos la pantalla
 			lPantalla = 0;																	//Incdicamos que la pantalla esta apagada
 			lPantallaEncendida = 0;															//Indicamos en enste otro flag la pantalla apagada
-			Display.DisplayOff();															//Apagamos la pantalla
 		}
 	#endif
 
+#ifdef GA940_MPR121
 	if (!lPantalla)						//Este flag en principio es para anular procesos mientras la pantalla esta encendida
 	{									//Si no hay pantalla siempre estara a 0 por lo que no modificamos si no hay pantalla
-	
+#endif		
 		/*----------------
 		Comprobacion Reset
 		------------------*/
@@ -169,15 +166,20 @@ void loop() {
 		//Cuando se han producido test de conexion un numero de veces igual a nCiclosMedida
 		//nTemporizacionMedida se pone a 0 para indicar al bloque Medida del Sensor que se ha de hacere una medida  
 
+		
 		if (TiempoTest > 0) 											// Si esta habilitado el test de conexion
 		{
+			
 			if (millis() > (nMiliSegundosTest + TiempoTest)) 			// Comprobamos si ha transcurrido el tiempo de test
 			{
-				nTemporizacionMedida++;					   				// Incrementamos el temporizador de medida
-				if (nTemporizacionMedida == nCiclosMedida) 				// Si ha llegado al valor establecido para hacer una medida
-				{
-					nTemporizacionMedida = 0; 							// Ponemos a 0 el flag a nTemporizacionMedida para que se realice medida de temperatura
-				}
+				//Determinamos si ha transcurrido el tiempo entre medidas
+				#ifdef SensorTemperatura
+					nTemporizacionMedida++;					   				// Incrementamos el temporizador de medida
+					if (nTemporizacionMedida == nCiclosMedida) 				// Si ha llegado al valor establecido para hacer una medida
+					{
+						nTemporizacionMedida = 0; 							// Ponemos a 0 el flag a nTemporizacionMedida para que se realice medida de temperatura
+					}
+				#endif	
 				nMiliSegundosTest = millis();	  						// Reseteamos el temporizador de Test
 				if (!TestConexion(lEstadisticas)) 						// Si se ha perdido la conexion despues de IntentosConexionServidor intentos ( Definido en Global.h )
 				{
@@ -213,62 +215,69 @@ void loop() {
 					}
 				}
 			}
-		}
-	
+		#ifdef GA940_MPR121
+			}
+		#endif
 
 
 		/*----------------
 		Medida del sensor
 		------------------*/
-		if (lOnOff && nTemporizacionMedida == 0) 						// Si tenemos habilitado el termostato y
-		{										 						// y se ha cumplido el ciclo de temporizacin de medida ( nTemporizacionMedida = 0 )
-			if (oSondaTemperatura.GetOnOff())	 						// Si la sonda está habilitada
-			{
-				if (oSondaTemperatura.TestSensor()) 					// Hacemos una medida y testeamos si hay alarma de temperatura o ha repuesto y, Si hay alarma o reposicion....
+		#ifdef SensorTemperatura
+			if (lOnOff && nTemporizacionMedida == 0) 						// Si tenemos habilitado el termostato y
+			{										 						// y se ha cumplido el ciclo de temporizacin de medida ( nTemporizacionMedida = 0 )
+				if (oSondaTemperatura.GetOnOff())	 						// Si la sonda está habilitada
 				{
+					if (oSondaTemperatura.TestSensor()) 					// Hacemos una medida y testeamos si hay alarma de temperatura o ha repuesto y, Si hay alarma o reposicion....
+					{
+						nTemporizacionMedida++;
+						delay(100);
+						if (lTelegram) 											// Si esta habilitado el push
+						{
+							lAlarma = oSondaTemperatura._GetEstadoAlarma();
+							Serial.print("lAlarma: ");
+							Serial.println(lAlarma);
+							if (oSondaTemperatura._GetEstadoAlarma())		// Notificamos la alarma o la reposicion
+							{
+								cSalida = "telegram-:-" + cPush + "-:-Alarma temperatura  " + (String)(oSondaTemperatura.nMedida);
+							}
+							else
+							{
+								cSalida = "telegram-:-" + cPush +"-:-Alarma temperatura  repuesta " + (String)(oSondaTemperatura.nMedida);
+							}
+							MensajeServidor(cSalida);
+							cSalida = String(' ');
+						}
+						delay(100);
+					}
+					#ifdef GA940_MPR121
+						if (!oSondaTemperatura.ConexionSensor())								//Si el sensor esta conectado
+						{
+							DisplayDatosSensor (oSondaTemperatura.nMedida, DatosSensor);		//Actualizamos el display
+						}
+					#endif	
+					if (lTelegram) // Si esta habilitado el push
+					{
+						if (oSondaTemperatura.TestConexionSensor()) 						//Comprobamos si la sonda sigue conectada
+						{
+							if (oSondaTemperatura.ConexionSensor()) 						// Notificamso si ha habido algun cambio en el estado de la sonda
+							{
+								cSalida = "telegram-:-" + cPush + "-:-Sensor desconectado  ";
+							}
+							else
+							{
+								cSalida = "telegram-:-" + cPush + "-:-Sensor conectado  ";
+							}
+						}
+					}	
 					nTemporizacionMedida++;
-					delay(100);
-					if (lTelegram) 											// Si esta habilitado el push
-					{
-						lAlarma = oSondaTemperatura._GetEstadoAlarma();
-						Serial.print("lAlarma: ");conectado
-						Serial.println(lAlarma);
-						if (oSondaTemperatura._GetEstadoAlarma())		// Notificamos la alarma o la reposicion
-						{
-							cSalida = "telegram-:-" + cPush + "-:-Alarma temperatura  " + (String)(oSondaTemperatura.nMedida);
-						}
-						else
-						{
-							cSalida = "telegram-:-" + cPush +"-:-Alarma temperatura  repuesta " + (String)(oSondaTemperatura.nMedida);
-						}
-						MensajeServidor(cSalida);
-						cSalida = String(' ');
-					}
-					delay(100);
+				}else{
+					#ifdef GA940_MPR121
+						DisplayDatosSensorOff (DatosSensor);		//Actualizamos el display
+					#endif
 				}
-				if (!oSondaTemperatura.ConexionSensor())								//Si el sensor esta conectado
-				{
-					DisplayDatosSensor (oSondaTemperatura.nMedida, DatosSensor);		//Actualizamos el display
-				}
-				if (lTelegram) // Si esta habilitado el push
-				{
-					if (oSondaTemperatura.TestConexionSensor()) 						//Comprobamos si la sonda sigue conectada
-					{
-						if (oSondaTemperatura.ConexionSensor()) 						// Notificamso si ha habido algun cambio en el estado de la sonda
-						{
-							cSalida = "telegram-:-" + cPush + "-:-Sensor desconectado  ";
-						}
-						else
-						{
-							cSalida = "telegram-:-" + cPush + "-:-Sensor conectado  ";
-						}
-					}
-				}	
-				nTemporizacionMedida++;
-			}else{
-				DisplayDatosSensorOff (DatosSensor);		//Actualizamos el display
 			}
-		}
+		#endif	
 
 		/*----------------
 		Analisis comandos
@@ -368,253 +377,270 @@ void loop() {
 			// Calefaccion.- Pone el la calefacción en On/Off
 			// Alarma.- Habilita/Deshabilita la alarma 
 			//--------------------------------------------------------------------------------------------
-if ((oMensaje.Mensaje).indexOf("Read") == 0) 
-{
-	DatosSensor = ReadDatosSensores();
-}
+
 
 
 			// Habilta/Deshabilita Sonda
-//PENDIENTE ACTUALIZAR PANTALLA			
-			if ((oMensaje.Mensaje).indexOf("Termometro-:-") == 0) // Si se recibe una orden de "Termometro-:-", se analida el estado recibido y se habilita/deshabilita la sonda segun la orden recibida
-			{
-				String cEstado = String(oMensaje.Mensaje).substring(3 + String(oMensaje.Mensaje).indexOf("-:-"), String(oMensaje.Mensaje).length()); // Extraemos segundo parametro pasado
-				String cEStado = String(cEstado).substring(3 + String(cEstado).indexOf("-:-"), String(cEstado).length());
-				if (cEstado == "On")																												 //Sie es On
-				{
-					DatosSensor.TermometroOnOff = 1;																								 //Lo trasladamos a la esturctura DataSensor	
-					MensajeServidor("save-:-Termometro-:-1");																						 //Actualizamos la variable Termometro en servidor	
-					oSondaTemperatura.On();																											 //Lo trasladamos a la sonda
-					#ifdef GA940_MPR121	
-						DisplayDatosSensor (oSondaTemperatura.GetTemperaturaInstantanea(),  DatosSensor);											 //Actualizamos Display 
-					#endif
-				}
-				if (cEstado == "Off")
-				{
-					DatosSensor.TermometroOnOff = 0;																								 //Lo trasladamos a la esturctura DataSensor	
-					MensajeServidor("save-:-Termometro-:-0");																						 //Actualizamos la variable Termometro en servidor
-					oSondaTemperatura.Off();																										 //Lo trasladamos a la sonda	
-					#ifdef GA940_MPR121	
-						DisplayDatosSensorOff(DatosSensor);																							 //Actualizamos Display para sonda Off ( valor temperatura ---- )
-					#endif	
-				}
-				oMensaje.Mensaje = "Termometro-:-" + cEstado;																						 //Devolvemos al cliente que lo ha solicitado el estado actual
-				oMensaje.Destinatario = oMensaje.Remitente;
-				EnviaMensaje(oMensaje);
-				cSalida = String(' '); 																												 // Vaciamos cSalida para que no se envie a HomeKit
+//PENDIENTE ACTUALIZAR PANTALLA		
+			//Mensajes para la sonda	
+			#ifdef SensorTemperatura
 
-			}
-			// Establece la consigna, 
-			if ((oMensaje.Mensaje).indexOf("Consigna-:-") == 0) // Si se recibe una orden de "SetOffset-:-", se analiza el valor recibido y se fija el offset del sensor
+			if ((oMensaje.Mensaje).indexOf("Read") == 0) 
 			{
-				String cValor = String(oMensaje.Mensaje).substring(3 + String(oMensaje.Mensaje).indexOf("-:-"), String(oMensaje.Mensaje).length()); //Extraemos el valor TA deseado
-				DatosSensor.Consigna = (cValor + '\0').toFloat();																					//Lo trasladamos a la esturctura DataSensor	
-				MensajeServidor("save-:-Consigna-:-"+cValor);																						//Actualizamos la variable Consigna en servidor
-				oSondaTemperatura.SetConsigna(DatosSensor.Consigna);																				//Lo trasladamos a la sonda
-				#ifdef GA940_MPR121				
-					DisplayDatosSensor (oSondaTemperatura.GetTemperaturaInstantanea(),  DatosSensor);												//Actualizamos Display 
-				#endif
-				oMensaje.Mensaje = "Consigna-:-" + cValor;			     																			//Devolvemos al cliente que lo ha solicitado el estado actual				
-				oMensaje.Destinatario = oMensaje.Remitente;
-				EnviaMensaje(oMensaje);
-				cSalida = String(' '); 																												// Vaciamos cSalida para que no se envie a HomeKit
-			}			
-			//Establecimiento umbrales temperatura
-			if ((oMensaje.Mensaje).indexOf("SetUmbralesTemperatura-:-") == 0)																		// Si se recibe una orden de "SeetUmbralesTemperatura-:-", se extraen los umbrales, se graban en los datos de usuario del sensor y en la sonda
-			{																																		// Se notifica al remitente umbrales registrados
-				String cValor = String(oMensaje.Mensaje).substring(3 + String(oMensaje.Mensaje).indexOf("-:-"), String(oMensaje.Mensaje).length()); // Extraemos el valor superior
-				String cValorI = String(cValor).substring(0, String(cValor).indexOf("-:-"));
-				String cValorS = String(cValor).substring(3 + String(cValor).indexOf("-:-"), String(cValor).length());
-				DatosSensor.UmbralSuperiorTemperatura = (cValorS + '\0').toFloat();
-				DatosSensor.UmbralInferiorTemperatura = (cValorI + '\0').toFloat();
-				MensajeServidor("save-:-UmbralSuperiorTemperatura-:-"+cValorS);
-				MensajeServidor("save-:-UmbralInferiorTemperatura-:-"+cValorI);
-				oSondaTemperatura.SetUmbrales(DatosSensor.UmbralSuperiorTemperatura, DatosSensor.UmbralInferiorTemperatura);
-				cSalida = (String)DatosSensor.UmbralInferiorTemperatura + "-:-" + (String)DatosSensor.UmbralSuperiorTemperatura;
-				oMensaje.Mensaje = "GrabadosUmbrales " + cSalida;
-				oMensaje.Destinatario = oMensaje.Remitente;
-				EnviaMensaje(oMensaje);
-				cSalida = String(' '); // No ha habido cambio de estado, Vaciamos cSalida para que no se envie a  a HomeKit
-				#ifdef GA940_MPR121
-					DisplayDatosSensor (oSondaTemperatura.nMedida, DatosSensor);
-				#endif
+				DatosSensor = ReadDatosSensores();
 			}
-			if ((oMensaje.Mensaje).indexOf("GetUmbralesTemperatura") == 0) // Si se recibe una orden de "GetUmbralesTemperatura", se devuelve el valor de los umbrales diferenciando si se ha pedido desde web o desde otro ususario
-			{
-				String cRemitente = ("websocket");
-				if (oMensaje.Remitente == cRemitente)
-				{
-					cSalida = "web-:-Umbrales-:-" + (String)DatosSensor.UmbralInferiorTemperatura + "-:-" + (String)DatosSensor.UmbralSuperiorTemperatura;
-					MensajeServidor(cSalida);
-				}
-				else
-				{
-					cSalida = (String)DatosSensor.UmbralInferiorTemperatura + "-:-" + (String)DatosSensor.UmbralSuperiorTemperatura;
-					oMensaje.Mensaje = "Umbrales-:-" + cSalida;
+
+
+
+				if ((oMensaje.Mensaje).indexOf("Termometro-:-") == 0) // Si se recibe una orden de "Termometro-:-", se analida el estado recibido y se habilita/deshabilita la sonda segun la orden recibida
+					{
+					String cEstado = String(oMensaje.Mensaje).substring(3 + String(oMensaje.Mensaje).indexOf("-:-"), String(oMensaje.Mensaje).length()); // Extraemos segundo parametro pasado
+					String cEStado = String(cEstado).substring(3 + String(cEstado).indexOf("-:-"), String(cEstado).length());
+					if (cEstado == "On")																												 //Sie es On
+					{
+						DatosSensor.TermometroOnOff = 1;																								 //Lo trasladamos a la esturctura DataSensor	
+						MensajeServidor("save-:-Termometro-:-1");																						 //Actualizamos la variable Termometro en servidor	
+						oSondaTemperatura.On();																											 //Lo trasladamos a la sonda
+						#ifdef GA940_MPR121	
+							DisplayDatosSensor (oSondaTemperatura.GetTemperaturaInstantanea(),  DatosSensor);											 //Actualizamos Display 
+						#endif
+					}
+					if (cEstado == "Off")
+					{
+						DatosSensor.TermometroOnOff = 0;																								 //Lo trasladamos a la esturctura DataSensor	
+						MensajeServidor("save-:-Termometro-:-0");																						 //Actualizamos la variable Termometro en servidor
+						oSondaTemperatura.Off();																										 //Lo trasladamos a la sonda	
+						#ifdef GA940_MPR121	
+							DisplayDatosSensorOff(DatosSensor);																							 //Actualizamos Display para sonda Off ( valor temperatura ---- )
+						#endif	
+					}
+					oMensaje.Mensaje = "Termometro-:-" + cEstado;																						 //Devolvemos al cliente que lo ha solicitado el estado actual
 					oMensaje.Destinatario = oMensaje.Remitente;
 					EnviaMensaje(oMensaje);
+					cSalida = String(' '); 																												 // Vaciamos cSalida para que no se envie a HomeKit
 				}
-				cSalida = String(' '); // Vaciamos cSalida para que no se envie a  HomeKit
-			}
-			if ((oMensaje.Mensaje).indexOf("SetAlarmaTemperatura-:-") == 0) // Si se recibe una orden de "SeetAlarmaTemperatura-:-", se extraen los datos de alarma, se graban en los datos de usuario del sensor y en la sonda
-			{
-				String cValor = String(oMensaje.Mensaje).substring(3 + String(oMensaje.Mensaje).indexOf("-:-"), String(oMensaje.Mensaje).length()); // Extraemos el valor TA deseado
-				String cTipoAlarma = String(cValor).substring(0, String(cValor).indexOf("-:-"));
-				cValor = String(cValor).substring(3 + String(cValor).indexOf("-:-"), String(cValor).length());
-				String cValorI = String(cValor).substring(0, String(cValor).indexOf("-:-"));
-				String cValorS = String(cValor).substring(3 + String(cValor).indexOf("-:-"), String(cValor).length());
-				DatosSensor.lTipoAlarmaTemperatura = (cTipoAlarma == "1") ? 1 : 0;
-				DatosSensor.AlarmaUSTemperatura = (cValorS + '\0').toInt();
-				DatosSensor.AlarmaUITemperatura = (cValorI + '\0').toInt();
-				MensajeServidor("save-:-lTipoAlarmaTemperatura-:-"+cTipoAlarma);
-				MensajeServidor("save-:-AlarmaUSTemperatura-:-"+cValorS);
-				MensajeServidor("save-:-AlarmaUITemperatura-:-"+cValorI);
-				oSondaTemperatura.Alarma(DatosSensor.lTipoAlarmaTemperatura, DatosSensor.AlarmaUSTemperatura, DatosSensor.AlarmaUITemperatura);
-				cSalida = "AlarmaTemperatura-:-" + (String)DatosSensor.lTipoAlarmaTemperatura + "-:-" + (String)DatosSensor.AlarmaUITemperatura + "-:-" + (String)DatosSensor.AlarmaUSTemperatura;
-				oMensaje.Mensaje = cSalida;
-				oMensaje.Destinatario = oMensaje.Remitente;
-				EnviaMensaje(oMensaje);
-				cSalida = String(' '); // Vaciamos cSalida para que no se envie a  a HomeKit
-				#ifdef GA940_MPR121
-					DisplayDatosSensor (oSondaTemperatura.GetTemperaturaInstantanea(), DatosSensor);
-				#endif
-			}
-			if ((oMensaje.Mensaje).indexOf("GetAlarmaTemperatura") == 0) // Si se recibe una orden de "GetAlarmaTemperatura" , se devuelve el valor de los datos de alarma diferenciando si se ha pedido desde web o desde otro ususario
-			{
-				String cRemitente = ("websocket");
-				if (oMensaje.Remitente == cRemitente)
+				// Establece la consigna, 
+				if ((oMensaje.Mensaje).indexOf("Consigna-:-") == 0) // Si se recibe una orden de "SetOffset-:-", se analiza el valor recibido y se fija el offset del sensor
 				{
-					cSalida = "web-:-AlarmaTemperatura-:-" + (String)DatosSensor.lTipoAlarmaTemperatura + "-:-" + (String)DatosSensor.AlarmaUITemperatura + "-:-" + (String)DatosSensor.AlarmaUSTemperatura;
-					MensajeServidor(cSalida);
+					String cValor = String(oMensaje.Mensaje).substring(3 + String(oMensaje.Mensaje).indexOf("-:-"), String(oMensaje.Mensaje).length()); //Extraemos el valor TA deseado
+					DatosSensor.Consigna = (cValor + '\0').toFloat();																					//Lo trasladamos a la esturctura DataSensor	
+					MensajeServidor("save-:-Consigna-:-"+cValor);																						//Actualizamos la variable Consigna en servidor
+					oSondaTemperatura.SetConsigna(DatosSensor.Consigna);																				//Lo trasladamos a la sonda
+					#ifdef GA940_MPR121				
+						DisplayDatosSensor (oSondaTemperatura.GetTemperaturaInstantanea(),  DatosSensor);												//Actualizamos Display 
+					#endif
+					oMensaje.Mensaje = "Consigna-:-" + cValor;			     																			//Devolvemos al cliente que lo ha solicitado el estado actual				
+					oMensaje.Destinatario = oMensaje.Remitente;
+					EnviaMensaje(oMensaje);
+					cSalida = String(' '); 																												// Vaciamos cSalida para que no se envie a HomeKit
+				}			
+				//Establecimiento umbrales temperatura
+				if ((oMensaje.Mensaje).indexOf("SetUmbralesTemperatura-:-") == 0)																		// Si se recibe una orden de "SeetUmbralesTemperatura-:-", se extraen los umbrales, se graban en los datos de usuario del sensor y en la sonda
+				{																																		// Se notifica al remitente umbrales registrados
+					String cValor = String(oMensaje.Mensaje).substring(3 + String(oMensaje.Mensaje).indexOf("-:-"), String(oMensaje.Mensaje).length()); // Extraemos el valor superior
+					String cValorI = String(cValor).substring(0, String(cValor).indexOf("-:-"));
+					String cValorS = String(cValor).substring(3 + String(cValor).indexOf("-:-"), String(cValor).length());
+					DatosSensor.UmbralSuperiorTemperatura = (cValorS + '\0').toFloat();
+					DatosSensor.UmbralInferiorTemperatura = (cValorI + '\0').toFloat();
+					MensajeServidor("save-:-UmbralSuperiorTemperatura-:-"+cValorS);
+					MensajeServidor("save-:-UmbralInferiorTemperatura-:-"+cValorI);
+					oSondaTemperatura.SetUmbrales(DatosSensor.UmbralSuperiorTemperatura, DatosSensor.UmbralInferiorTemperatura);
+					cSalida = (String)DatosSensor.UmbralInferiorTemperatura + "-:-" + (String)DatosSensor.UmbralSuperiorTemperatura;
+					oMensaje.Mensaje = "GrabadosUmbrales " + cSalida;
+					oMensaje.Destinatario = oMensaje.Remitente;
+					EnviaMensaje(oMensaje);
+					cSalida = String(' '); // No ha habido cambio de estado, Vaciamos cSalida para que no se envie a  a HomeKit
+					#ifdef GA940_MPR121
+						DisplayDatosSensor (oSondaTemperatura.nMedida, DatosSensor);
+					#endif
 				}
-				else
+				//Devuelve los umbrales de temperatura
+				if ((oMensaje.Mensaje).indexOf("GetUmbralesTemperatura") == 0) // Si se recibe una orden de "GetUmbralesTemperatura", se devuelve el valor de los umbrales diferenciando si se ha pedido desde web o desde otro ususario
 				{
+					String cRemitente = ("websocket");
+					if (oMensaje.Remitente == cRemitente)
+					{
+						cSalida = "web-:-Umbrales-:-" + (String)DatosSensor.UmbralInferiorTemperatura + "-:-" + (String)DatosSensor.UmbralSuperiorTemperatura;
+						MensajeServidor(cSalida);
+					}
+					else
+					{
+						cSalida = (String)DatosSensor.UmbralInferiorTemperatura + "-:-" + (String)DatosSensor.UmbralSuperiorTemperatura;
+						oMensaje.Mensaje = "Umbrales-:-" + cSalida;
+						oMensaje.Destinatario = oMensaje.Remitente;
+						EnviaMensaje(oMensaje);
+					}
+					cSalida = String(' '); // Vaciamos cSalida para que no se envie a  HomeKit
+				}
+				//Fija los parametros de alarma
+				if ((oMensaje.Mensaje).indexOf("SetAlarmaTemperatura-:-") == 0) // Si se recibe una orden de "SeetAlarmaTemperatura-:-", se extraen los datos de alarma, se graban en los datos de usuario del sensor y en la sonda
+				{
+					String cValor = String(oMensaje.Mensaje).substring(3 + String(oMensaje.Mensaje).indexOf("-:-"), String(oMensaje.Mensaje).length()); // Extraemos el valor TA deseado
+					String cTipoAlarma = String(cValor).substring(0, String(cValor).indexOf("-:-"));
+					cValor = String(cValor).substring(3 + String(cValor).indexOf("-:-"), String(cValor).length());
+					String cValorI = String(cValor).substring(0, String(cValor).indexOf("-:-"));
+					String cValorS = String(cValor).substring(3 + String(cValor).indexOf("-:-"), String(cValor).length());
+					DatosSensor.lTipoAlarmaTemperatura = (cTipoAlarma == "1") ? 1 : 0;
+					DatosSensor.AlarmaUSTemperatura = (cValorS + '\0').toInt();
+					DatosSensor.AlarmaUITemperatura = (cValorI + '\0').toInt();
+					MensajeServidor("save-:-lTipoAlarmaTemperatura-:-"+cTipoAlarma);
+					MensajeServidor("save-:-AlarmaUSTemperatura-:-"+cValorS);
+					MensajeServidor("save-:-AlarmaUITemperatura-:-"+cValorI);
+					oSondaTemperatura.Alarma(DatosSensor.lTipoAlarmaTemperatura, DatosSensor.AlarmaUSTemperatura, DatosSensor.AlarmaUITemperatura);
 					cSalida = "AlarmaTemperatura-:-" + (String)DatosSensor.lTipoAlarmaTemperatura + "-:-" + (String)DatosSensor.AlarmaUITemperatura + "-:-" + (String)DatosSensor.AlarmaUSTemperatura;
 					oMensaje.Mensaje = cSalida;
 					oMensaje.Destinatario = oMensaje.Remitente;
 					EnviaMensaje(oMensaje);
+					cSalida = String(' '); // Vaciamos cSalida para que no se envie a  a HomeKit
+					#ifdef GA940_MPR121
+						DisplayDatosSensor (oSondaTemperatura.GetTemperaturaInstantanea(), DatosSensor);
+					#endif
 				}
-				cSalida = String(' '); // No ha habido cambio de estado, Vaciamos cSalida para que no se envie a  HomeKit
-			}
-			if ((oMensaje.Mensaje).indexOf("GetTermometro") == 0) // Si se recibe una orden de "GetTermometro", manda la temperatura de la sonda en funcion del remitente
-			{
-				String cRemitente = ("websocket");
-				if (oMensaje.Remitente == cRemitente)
+				//Devuelve los parametros de la alarma
+				if ((oMensaje.Mensaje).indexOf("GetAlarmaTemperatura") == 0) // Si se recibe una orden de "GetAlarmaTemperatura" , se devuelve el valor de los datos de alarma diferenciando si se ha pedido desde web o desde otro ususario
 				{
-					cSalida = "web-:-Termometro-:-" + (String)(oSondaTemperatura.nMedida);
-					MensajeServidor(cSalida);
+					String cRemitente = ("websocket");
+					if (oMensaje.Remitente == cRemitente)
+					{
+						cSalida = "web-:-AlarmaTemperatura-:-" + (String)DatosSensor.lTipoAlarmaTemperatura + "-:-" + (String)DatosSensor.AlarmaUITemperatura + "-:-" + (String)DatosSensor.AlarmaUSTemperatura;
+						MensajeServidor(cSalida);
+					}
+					else
+					{
+						cSalida = "AlarmaTemperatura-:-" + (String)DatosSensor.lTipoAlarmaTemperatura + "-:-" + (String)DatosSensor.AlarmaUITemperatura + "-:-" + (String)DatosSensor.AlarmaUSTemperatura;
+						oMensaje.Mensaje = cSalida;
+						oMensaje.Destinatario = oMensaje.Remitente;
+						EnviaMensaje(oMensaje);
+					}
+					cSalida = String(' '); // No ha habido cambio de estado, Vaciamos cSalida para que no se envie a  HomeKit
 				}
-				else
+				//Devuelve los datos de temperatura
+				if ((oMensaje.Mensaje).indexOf("GetTermometro") == 0) // Si se recibe una orden de "GetTermometro", manda la temperatura de la sonda en funcion del remitente
 				{
-					oMensaje.Mensaje = (String)(oSondaTemperatura.nMedida);
+					String cRemitente = ("websocket");
+					if (oMensaje.Remitente == cRemitente)
+					{
+						cSalida = "web-:-Termometro-:-" + (String)(oSondaTemperatura.nMedida);
+						MensajeServidor(cSalida);
+					}
+					else
+					{
+						oMensaje.Mensaje = (String)(oSondaTemperatura.nMedida);
+						oMensaje.Destinatario = oMensaje.Remitente;
+						EnviaMensaje(oMensaje);
+					}
+					cSalida = String(' '); // Vaciamos cSalida para que no se envie a  HomeKit
+				}	
+				//Establece el Offset de la sonda
+				if ((oMensaje.Mensaje).indexOf("SetOffset-:-") == 0) // Si se recibe una orden de "SetOffset-:-", se analiza el valor recibido y se fija el offset del sensor
+				{
+					String cValor = String(oMensaje.Mensaje).substring(3 + String(oMensaje.Mensaje).indexOf("-:-"), String(oMensaje.Mensaje).length()); // Extraemos el valor TA deseado
+					DatosSensor.Offset = (cValor + '\0').toFloat();
+					MensajeServidor("save-:-Offset-:-"+cValor);
+					oSondaTemperatura.SetOffset(DatosSensor.Offset);
+					oMensaje.Mensaje = "Offset establecido en " + (String)DatosSensor.Offset;
 					oMensaje.Destinatario = oMensaje.Remitente;
 					EnviaMensaje(oMensaje);
-				}
-				cSalida = String(' '); // Vaciamos cSalida para que no se envie a  HomeKit
-			}	
-			if ((oMensaje.Mensaje).indexOf("SetOffset-:-") == 0) // Si se recibe una orden de "SetOffset-:-", se analiza el valor recibido y se fija el offset del sensor
-			{
-				String cValor = String(oMensaje.Mensaje).substring(3 + String(oMensaje.Mensaje).indexOf("-:-"), String(oMensaje.Mensaje).length()); // Extraemos el valor TA deseado
-				DatosSensor.Offset = (cValor + '\0').toFloat();
-				MensajeServidor("save-:-Offset-:-"+cValor);
-				oSondaTemperatura.SetOffset(DatosSensor.Offset);
-				oMensaje.Mensaje = "Offset establecido en " + (String)DatosSensor.Offset;
-				oMensaje.Destinatario = oMensaje.Remitente;
-				EnviaMensaje(oMensaje);
-				cSalida = String(' '); // Vaciamos cSalida para que no se envie a HomeKit
-				#ifdef GA940_MPR121
-					DisplayDatosSensor (oSondaTemperatura.GetTemperaturaInstantanea(), DatosSensor);
-				#endif
-			}
-			if (oMensaje.Mensaje == "GetOffset") // Si se recibe una orden de "GetOffset", se devuelve el offset del sensor
-			{
-				oMensaje.Mensaje = "Offset del sensor " + (String)DatosSensor.Offset + " grados";
-				oMensaje.Destinatario = oMensaje.Remitente;
-				EnviaMensaje(oMensaje);
-				cSalida = String(' '); // Vaciamos cSalida para que no se envie a HomeKit
-			}					
-			if (oMensaje.Mensaje == "Automatico") // Si se recibe una orden de Automatico, se pone el termostato en automatico
-			{
-				DatosSensor.lAutomaticoManual = 0;
-				MensajeServidor("save-:-lAutomaticoManual-:-0");
-				#ifdef GA940_MPR121
-					DisplayDatosSensor (oSondaTemperatura.GetTemperaturaInstantanea(), DatosSensor);
-				#endif
-				oMensaje.Mensaje = "Termostato en automatico ";
-				oMensaje.Destinatario = oMensaje.Remitente;
-				EnviaMensaje(oMensaje);
-				cSalida = String(' '); // Vaciamos cSalida para que no se envie a HomeKit
-			}					
-			if (oMensaje.Mensaje == "Manual") // Si se recibe una orden de Manual, se pone el termostato en manual
-			{
-				DatosSensor.lAutomaticoManual = 1;
-				MensajeServidor("save-:-lAutomaticoManual-:-1");
-				#ifdef GA940_MPR121
-					DisplayDatosSensor (oSondaTemperatura.GetTemperaturaInstantanea(), DatosSensor);
-				#endif
-				oMensaje.Mensaje = "Termostato en manual ";
-				oMensaje.Destinatario = oMensaje.Remitente;
-				EnviaMensaje(oMensaje);
-				cSalida = String(' '); // Vaciamos cSalida para que no se envie a HomeKit
-			}
-			if (oMensaje.Mensaje.indexOf("Calefaccion-:-") == 0) // Si se recibe una orden de "Calefacción", se pone la calefacción como se indica en el segundo parametro
-			{                                                    //Siempre que el termostato este en manual
-				if (DatosSensor.lAutomaticoManual)				 //Si esta en manual
-				{	
-					String cValor = String(oMensaje.Mensaje).substring(3 + String(oMensaje.Mensaje).indexOf("-:-"), String(oMensaje.Mensaje).length()); // Extraemos el valor TA deseado		
-					if ( cValor == "On")
-					{
-						DatosSensor.lOnOff = 1;
-						MensajeServidor("save-:-Calefaccion-:-1");
-						CalefaccionOn();
-					}
-					if ( cValor == "Off")
-					{
-						DatosSensor.lOnOff = 0;
-						MensajeServidor("save-:-Calefaccion-:-0");
-						CalefaccionOff();
-					}
-
+					cSalida = String(' '); // Vaciamos cSalida para que no se envie a HomeKit
 					#ifdef GA940_MPR121
+						DisplayDatosSensor (oSondaTemperatura.GetTemperaturaInstantanea(), DatosSensor);
+					#endif
+				}
+				//Devuelve lso datos de Offset de la sonda
+				if (oMensaje.Mensaje == "GetOffset") // Si se recibe una orden de "GetOffset", se devuelve el offset del sensor
+				{
+					oMensaje.Mensaje = "Offset del sensor " + (String)DatosSensor.Offset + " grados";
+					oMensaje.Destinatario = oMensaje.Remitente;
+					EnviaMensaje(oMensaje);
+					cSalida = String(' '); // Vaciamos cSalida para que no se envie a HomeKit
+				}					
+				//Pone el termostato en automatico
+				if (oMensaje.Mensaje == "Automatico") // Si se recibe una orden de Automatico, se pone el termostato en automatico
+				{
+					DatosSensor.lAutomaticoManual = 0;
+					MensajeServidor("save-:-lAutomaticoManual-:-0");
+					#ifdef GA940_MPR121
+						DisplayDatosSensor (oSondaTemperatura.GetTemperaturaInstantanea(), DatosSensor);
+					#endif
+					oMensaje.Mensaje = "Termostato en automatico ";
+					oMensaje.Destinatario = oMensaje.Remitente;
+					EnviaMensaje(oMensaje);
+					cSalida = String(' '); // Vaciamos cSalida para que no se envie a HomeKit
+				}					
+				//Pone el termostato en manual
+				if (oMensaje.Mensaje == "Manual") // Si se recibe una orden de Manual, se pone el termostato en manual
+				{
+					DatosSensor.lAutomaticoManual = 1;
+					MensajeServidor("save-:-lAutomaticoManual-:-1");
+					#ifdef GA940_MPR121
+						DisplayDatosSensor (oSondaTemperatura.GetTemperaturaInstantanea(), DatosSensor);
+					#endif
+					oMensaje.Mensaje = "Termostato en manual ";
+					oMensaje.Destinatario = oMensaje.Remitente;
+					EnviaMensaje(oMensaje);
+					cSalida = String(' '); // Vaciamos cSalida para que no se envie a HomeKit
+				}
+				//Enciende o apaga la calefaccion
+				if (oMensaje.Mensaje.indexOf("Calefaccion-:-") == 0) // Si se recibe una orden de "Calefacción", se pone la calefacción como se indica en el segundo parametro
+				{                                                    //Siempre que el termostato este en manual
+					if (DatosSensor.lAutomaticoManual)				 //Si esta en manual
+					{	
+						String cValor = String(oMensaje.Mensaje).substring(3 + String(oMensaje.Mensaje).indexOf("-:-"), String(oMensaje.Mensaje).length()); // Extraemos el valor TA deseado		
 						if ( cValor == "On")
 						{
-							Display.WriteTxtOn();
+							DatosSensor.lOnOff = 1;
+							MensajeServidor("save-:-Calefaccion-:-1");
+							CalefaccionOn();
 						}
 						if ( cValor == "Off")
 						{
-							Display.WriteTxtOff();
+							DatosSensor.lOnOff = 0;
+							MensajeServidor("save-:-Calefaccion-:-0");
+							CalefaccionOff();
 						}
-					#endif 
-					oMensaje.Mensaje = "Calefaccion en  " + cValor;
-				}else{
-					oMensaje.Mensaje = "El termostato esta en automatico  ";
-				}
-				oMensaje.Destinatario = oMensaje.Remitente;
-				EnviaMensaje(oMensaje);
-				cSalida = String(' '); // Vaciamos cSalida para que no se envie a HomeKit	
 
-			}
-			if ((oMensaje.Mensaje).indexOf("Alarma-:-") == 0) // Si se recibe una orden de "Alarma", habilita o deshabilita la alarma (On/Off)
-			{
-				String cEstado = String(oMensaje.Mensaje).substring(3 + String(oMensaje.Mensaje).indexOf("-:-"), String(oMensaje.Mensaje).length()); // Extraemos el valor TA deseado
-				String cEStado = String(cEstado).substring(3 + String(cEstado).indexOf("-:-"), String(cEstado).length());
-				if (cEstado == "On")							// Si se recibe Alarma-:-On
-				{
-					DatosSensor.lEnableAlarma = 1;
-					MensajeServidor("save-:-Alarma-:-1");
-					oSondaTemperatura.EnableAlarm();
+						#ifdef GA940_MPR121
+							if ( cValor == "On")
+							{
+								Display.WriteTxtOn();
+							}
+							if ( cValor == "Off")
+							{
+								Display.WriteTxtOff();
+							}
+						#endif 
+						oMensaje.Mensaje = "Calefaccion en  " + cValor;
+					}else{
+						oMensaje.Mensaje = "El termostato esta en automatico  ";
+					}
+					oMensaje.Destinatario = oMensaje.Remitente;
+					EnviaMensaje(oMensaje);
+					cSalida = String(' '); // Vaciamos cSalida para que no se envie a HomeKit	
+
 				}
-				if (cEstado == "Off")							// Si se recibe Alarma-:-Off
+				//Habilita/Deshabilita la alarma
+				if ((oMensaje.Mensaje).indexOf("Alarma-:-") == 0) // Si se recibe una orden de "Alarma", habilita o deshabilita la alarma (On/Off)
 				{
-					DatosSensor.lEnableAlarma = 0;
-					MensajeServidor("save-:-Alarma-:-0");
-					oSondaTemperatura.DisableAlarm();
+					String cEstado = String(oMensaje.Mensaje).substring(3 + String(oMensaje.Mensaje).indexOf("-:-"), String(oMensaje.Mensaje).length()); // Extraemos el valor TA deseado
+					String cEStado = String(cEstado).substring(3 + String(cEstado).indexOf("-:-"), String(cEstado).length());
+					if (cEstado == "On")							// Si se recibe Alarma-:-On
+					{
+						DatosSensor.lEnableAlarma = 1;
+						MensajeServidor("save-:-Alarma-:-1");
+						oSondaTemperatura.EnableAlarm();
+					}
+					if (cEstado == "Off")							// Si se recibe Alarma-:-Off
+					{
+						DatosSensor.lEnableAlarma = 0;
+						MensajeServidor("save-:-Alarma-:-0");
+						oSondaTemperatura.DisableAlarm();
+					}
+					oMensaje.Mensaje = "Alarma " + cEstado;			//Informamos del estado
+					oMensaje.Destinatario = oMensaje.Remitente;
+					EnviaMensaje(oMensaje);
+					cSalida = String(' '); // Vaciamos cSalida para que no se envie a HomeKit
 				}
-				oMensaje.Mensaje = "Alarma " + cEstado;			//Informamos del estado
-				oMensaje.Destinatario = oMensaje.Remitente;
-				EnviaMensaje(oMensaje);
-				cSalida = String(' '); // Vaciamos cSalida para que no se envie a HomeKit
-			}
+			#endif
 		}
 	}
 	/*----------------
@@ -628,6 +654,7 @@ if ((oMensaje.Mensaje).indexOf("Read") == 0)
 
 	wdt_reset(); // Refrescamos WDT	
 
+	//Testeo tecla pulsada
 	#ifdef GA940_MPR121
 		if (lFlagInterrupcion )								//Si se ha pulsado una tecla
 		{

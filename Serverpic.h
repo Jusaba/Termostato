@@ -30,10 +30,11 @@
 	#ifdef TERMOSTATO_MANUAL_1
 		#define Placa "TERMOSTATO_DT.0"		//Termostato Display Touch
 		#define Modelo "ESP12"
-		#define TERMOSTATO_REMOTO  		
+		#define TERMOSTATO_LOCAL 		
 		#define Ino "TermostatoDTR1"   
-		#define GA940_MPR121     
+		//#define GA940_MPR121     
 		#define SHT20	
+		#define Display18
 	#endif
 
 
@@ -41,18 +42,33 @@
 
 	#ifdef DS18B20 															//Si el sensor es el DS18B20, cargamos su clase
 		#include "SensorDS18B20.h"
+		#define SensorTemperatura
 	#endif
 
 	#ifdef SHT20 															//Si el sensor es el SHT20, cargamos su clase
 		#include "SensorSHT20.h"
+		#define SensorTemperatura
 	#endif
-
 
 	#ifdef GA940_MPR121
 		#include "TouchTermostato.h"
-		TOUCHTERMOSTATO Display  ;
 		const uint8_t MPR121_ADDR = 0x5A;   // Direccion I2c de MPR121 
+	#else
+		#ifdef Display18
+			#include "DisplayTermostato.h"
+		#endif	
 	#endif
+
+
+	#ifdef Display18
+		#ifdef GA940_MPR121
+			TOUCHTERMOSTATO Display ;
+		#else
+			DISPLAYTERMOSTATO Display ;
+		#endif	
+
+	#endif
+
 
 
 	//----------------------------
@@ -81,10 +97,10 @@
 	#define nCiclosParada 10												//Ciclos de comprobacion de desconexion estable para parar el dispositivo
 	#define nCiclosMedida 5													//Ciclos de Test para realizar una medida
 
-	#ifdef GA940_MPR121
-		//---------------------------------------------
-		//Tiempo activacion pantalla
-		//---------------------------------------------
+	//---------------------------------------------
+	//Tiempo activacion pantalla
+	//---------------------------------------------
+	#ifdef Display18
 		#define nTiempoPantallaOn 	25000										//Milisegundo que la pantalla esta encendida cuando esta enb reposo
 	#endif
 
@@ -142,55 +158,76 @@
 //	#define nMuestrasMedida 3
 	#ifdef GA940_MPR121
 	    int lFlagInterrupcion = 0;											//Flag que indica si se ha producido interrupcion por teclado puldsado
+	#endif	
+
+	#ifdef Display18
 		double nTiempoPantalla = 0;											//Variable para contorlar el tiempo de pantalla encendida
 		boolean lPantalla = 1;												//Pantalla apagada/encendida (0/1)
 	 	boolean lPantallaEncendida = 0;										//Flag que indica que se debe reiniciar la pantalla cuando se sale de estado off
-	#endif	
+	#endif
+
 	boolean lEstadoCalefaccion = 0;											//Flag que indica si la calefacción esta encendida o apagada ( 1/0 )
 
 
-	/**
-	******************************************************
-	* Estructura Datos sensores
-	*
-	*/
-	typedef struct DataSensor {
-		boolean TermometroOnOff;										   /**< Sensor habilitado/Deshabillitado */
-		float Consigna;													   /**< Consigna del termostato */
-    	float UmbralSuperiorTemperatura;   								   /**< Umbral superior temperatura */					
-    	float UmbralInferiorTemperatura;   								   /**< Umbral inferior temperatura */	
-		boolean lTipoAlarmaTemperatura;									   /**< Tipo de alarma, 1 por Umbral Superior, 0 por Umbral inferior */		
-    	int AlarmaUSTemperatura;										   /**< Segundos para activar alarma por debajo de umbral superior */	
-    	int AlarmaUITemperatura;										   /**< Segundos para activar alarma por debajo de umbral inferior */	
-		float Offset;													   /**< Temperatura offset del sensor */	
-		boolean lEnableAlarma;											   /**< Flag de alarma deshabilitada/habilitada (0/1)*/
-		boolean lAutomaticoManual;										   /**< Flag Automatico/Manual (0/1) */	
-		boolean lOnOff;													   /**< Flag que indica si la calefaccion esta encendida o apagada*/
-	};
 
-	DataSensor DatosSensor;													//Definimos la variable DatosSensor 
+	#ifdef SensorTemperatura
+		/**
+		******************************************************
+		* Estructura Datos sensores
+		*
+		*/
+		typedef struct DataSensor {
+			boolean TermometroOnOff;										   /**< Sensor habilitado/Deshabillitado */
+			float Consigna;													   /**< Consigna del termostato */
+    		float UmbralSuperiorTemperatura;   								   /**< Umbral superior temperatura */					
+    		float UmbralInferiorTemperatura;   								   /**< Umbral inferior temperatura */	
+			boolean lTipoAlarmaTemperatura;									   /**< Tipo de alarma, 1 por Umbral Superior, 0 por Umbral inferior */		
+    		int AlarmaUSTemperatura;										   /**< Segundos para activar alarma por debajo de umbral superior */	
+    		int AlarmaUITemperatura;										   /**< Segundos para activar alarma por debajo de umbral inferior */	
+			float Offset;													   /**< Temperatura offset del sensor */	
+			boolean lEnableAlarma;											   /**< Flag de alarma deshabilitada/habilitada (0/1)*/
+			boolean lAutomaticoManual;										   /**< Flag Automatico/Manual (0/1) */	
+			boolean lOnOff;													   /**< Flag que indica si la calefaccion esta encendida o apagada*/
+		};
+	
+		DataSensor DatosSensor;													//Definimos la variable DatosSensor 
 
-	//====================================================================
-	//Funciones para grabar datos de sensores en EPROM
-	//La grabacion en Eprom se ha sustituido por la grabacion  en Servidor
-	//por lo que estas funciones han dejado de utilizarse en este modulo
-	//====================================================================
-   	void GrabaDatosSensores ( DataSensor oDatos);
-	DataSensor LeeDatosSensores ( void );
+		//====================================================================
+		//Funciones para grabar datos de sensores en EPROM
+		//La grabacion en Eprom se ha sustituido por la grabacion  en Servidor
+		//por lo que estas funciones han dejado de utilizarse en este modulo
+		//====================================================================
+   		void GrabaDatosSensores ( DataSensor oDatos);
+		DataSensor LeeDatosSensores ( void );
+		//====================================================================
+		//Funciones para leer datos de Severpic
+		//====================================================================
+	   	DataSensor ReadDatosSensores ( void );
+		String ReadVariable (String cVariable);
+		void PrintDatosSensor (DataSensor oDatos );
+		//====================================================================
+		//Funciones para gestion de alarma
+		//====================================================================
+		void AlarmaOn (void);
+		void AlarmaOff (void);
+		//====================================================================
+		//Funciones para visualizar datos del termostato en pantalla
+		//====================================================================
+		void DisplayDatosSensor ( float nTemperatura,  DataSensor eDatosSensor );
+    	void DisplayDatosSensorOff ( DataSensor eDatosSensor );
+
+	#endif
+
+
 
 	//===========================================
 	//Funciones particulares de display y touch
 	//===========================================
-    void ICACHE_RAM_ATTR ScanPulsa (void);
- 	void DisplayDatosSensor ( float nTemperatura,  DataSensor eDatosSensor );
-    void DisplayDatosSensorOff ( DataSensor eDatosSensor );
+#ifdef GA940_MPR121    
+	void ICACHE_RAM_ATTR ScanPulsa (void);
+#endif
 
-   	DataSensor ReadDatosSensores ( void );
-	String ReadVariable (String cVariable);
-	void PrintDatosSensor (DataSensor oDatos );
 
-	void AlarmaOn (void);
-	void AlarmaOff (void);
 	boolean GetCalefaccion (void);
 	void CalefaccionOn (void);
 	void CalefaccionOff (void);
@@ -260,263 +297,293 @@
 
 
 
-    /**
-    ******************************************************
-    * @brief  Función que graba en Eprom los datos de los sensores
-    *
-    * @param oDatos. Estructura de datos DataSensor
-    */
-    void GrabaDatosSensores ( DataSensor oDatos)
-    {
-       EEPROM.put(nPosicionDataUsuario, oDatos); //Guardo la config
-       EEPROM.commit();
-    }
-    /**
-    ******************************************************
-    * @brief  Función que lee de Eprom los datos de los sensores
-    *
-    * @return Estructura de datos DataSensor
-    */
-    DataSensor LeeDatosSensores ( void )
-    {
-       DataSensor oDatos; 
-       EEPROM.get(nPosicionDataUsuario, oDatos); //Guardo la config
-       return ( oDatos );
-    }
-    /**
-    ******************************************************
-    * @brief  Función que lee los datos del sensor de las variables almacenadas en Serverpic
-    *
-    * @return Estructura de datos DataSensor
-    */
-    DataSensor ReadDatosSensores ( void )
-    {
-	   	String cValor;	
-       	DataSensor oDatos; 
-       	cValor = ReadVariable ("Termometro");
-	   	if ( cValor == "1")
-	   	{
-			oDatos.TermometroOnOff = 1;
-	   	}
-	   	if ( cValor == "0")
-	   	{
-			oDatos.TermometroOnOff = 0;
-	   	}
-       	cValor = ReadVariable ("Consigna");
-	   	oDatos.Consigna = cValor.toFloat();
-		cValor = ReadVariable ("UmbralSuperiorTemperatura");
-		oDatos.UmbralSuperiorTemperatura = cValor.toFloat();
-		cValor = ReadVariable ("UmbralInferiorTemperatura");
-		oDatos.UmbralInferiorTemperatura = cValor.toFloat();
-       	cValor = ReadVariable ("lTipoAlarmaTemperatura");
-	   	if ( cValor == "1")
-	   	{
-			oDatos.lTipoAlarmaTemperatura = 1;
-	   	}
-	   	if ( cValor == "0")
-	   	{
-			oDatos.lTipoAlarmaTemperatura = 0;
-	   	}	
-		cValor = ReadVariable ("AlarmaUSTemperatura");
-		oDatos.AlarmaUSTemperatura = cValor.toInt();
-		cValor = ReadVariable ("AlarmaUITemperatura");
-		oDatos.AlarmaUITemperatura = cValor.toInt();
-		cValor = ReadVariable ("Offset");
-		oDatos.Offset = cValor.toFloat();
-       	cValor = ReadVariable ("lEnableAlarma");
-	   	if ( cValor == "On")
-	   	{
-			oDatos.lEnableAlarma = 1;
-	   	}
-	   	if ( cValor == "Off")
-	   	{
-			oDatos.lEnableAlarma = 0;
-	   	}
-       	cValor = ReadVariable ("lAutomaticoManual");
-	   	if ( cValor == "1")
-	   	{
-			oDatos.lAutomaticoManual = 1;
-	   	}
-	   	if ( cValor == "0")
-	   	{
-			oDatos.lAutomaticoManual = 0;
-	   	}
-       	cValor = ReadVariable ("TermometroOnOff");
-	   	if ( cValor == "1")
-	   	{
-			oDatos.TermometroOnOff = 1;
-	   	}
-	   	if ( cValor == "0")
-	   	{
-			oDatos.TermometroOnOff = 0;
-	   	}
-		cValor = ReadVariable ("lOnOff");
-	   	if ( cValor == "1")
-	   	{
-			oDatos.lOnOff = 1;
-	   	}
-	   	if ( cValor == "0")
-	   	{
-			oDatos.lOnOff = 0;
-	   	} 
-		cValor = ReadVariable ("Alarma");
-	   	if ( cValor == "1")
-	   	{
-			oDatos.lEnableAlarma = 1;
-	   	}
-	   	if ( cValor == "0")
-	   	{
-			oDatos.lEnableAlarma = 0;
-	   	} 
-
-
-PrintDatosSensor( oDatos );
-       return ( oDatos );
-    }	
-	String ReadVariable (String cVariable)
-	{
-		long nMiliSegundos;
-    	String cLinea;                                                                              //Variable donde se almacenara informacio temporal
-    
-		Cliente.print("load-:-");
-		Cliente.print(cVariable);
-		Cliente.print("\n");  
-
-		delay(200);
-
-		nMiliSegundos = millis ();
-		while ( !Cliente.available() && millis() < nMiliSegundos + 5000 ){}                         //Mientras recibamos datos del servidor
-		cLinea = Cliente.readStringUntil('\n');
-
-		return(cLinea);
-
+	#ifdef SensorTemperatura
+    	/**
+    	******************************************************
+    	* @brief  Función que graba en Eprom los datos de los sensores
+    	*
+    	* @param oDatos. Estructura de datos DataSensor
+    	*/
+    	void GrabaDatosSensores ( DataSensor oDatos)
+    	{
+    	   EEPROM.put(nPosicionDataUsuario, oDatos); //Guardo la config
+    	   EEPROM.commit();
+    	}
+		/**
+		******************************************************
+		* @brief  Función que lee de Eprom los datos de los sensores
+		*
+		* @return Estructura de datos DataSensor
+		*/
+		DataSensor LeeDatosSensores ( void )
+		{
+		   DataSensor oDatos; 
+		   EEPROM.get(nPosicionDataUsuario, oDatos); //Guardo la config
+		   return ( oDatos );
+		}
+		/**
+		******************************************************
+		* @brief  Función que lee los datos del sensor de las variables almacenadas en Serverpic
+		*
+		* @return Estructura de datos DataSensor
+		*/
+		DataSensor ReadDatosSensores ( void )
+		{
+		   	String cValor;	
+		   	DataSensor oDatos; 
+		   	cValor = ReadVariable ("Termometro");
+		   	if ( cValor == "1")
+		   	{
+				oDatos.TermometroOnOff = 1;
+		   	}
+		   	if ( cValor == "0")
+		   	{
+				oDatos.TermometroOnOff = 0;
+		   	}
+		   	cValor = ReadVariable ("Consigna");
+		   	oDatos.Consigna = cValor.toFloat();
+			cValor = ReadVariable ("UmbralSuperiorTemperatura");
+			oDatos.UmbralSuperiorTemperatura = cValor.toFloat();
+			cValor = ReadVariable ("UmbralInferiorTemperatura");
+			oDatos.UmbralInferiorTemperatura = cValor.toFloat();
+		   	cValor = ReadVariable ("lTipoAlarmaTemperatura");
+		   	if ( cValor == "1")
+		   	{
+				oDatos.lTipoAlarmaTemperatura = 1;
+		   	}
+		   	if ( cValor == "0")
+		   	{
+				oDatos.lTipoAlarmaTemperatura = 0;
+		   	}	
+			cValor = ReadVariable ("AlarmaUSTemperatura");
+			oDatos.AlarmaUSTemperatura = cValor.toInt();
+			cValor = ReadVariable ("AlarmaUITemperatura");
+			oDatos.AlarmaUITemperatura = cValor.toInt();
+			cValor = ReadVariable ("Offset");
+			oDatos.Offset = cValor.toFloat();
+		   	cValor = ReadVariable ("lEnableAlarma");
+		   	if ( cValor == "On")
+		   	{
+				oDatos.lEnableAlarma = 1;
+		   	}
+		   	if ( cValor == "Off")
+		   	{
+				oDatos.lEnableAlarma = 0;
+		   	}
+		   	cValor = ReadVariable ("lAutomaticoManual");
+		   	if ( cValor == "1")
+		   	{
+				oDatos.lAutomaticoManual = 1;
+		   	}
+		   	if ( cValor == "0")
+		   	{
+				oDatos.lAutomaticoManual = 0;
+		   	}
+		   	cValor = ReadVariable ("TermometroOnOff");
+		   	if ( cValor == "1")
+		   	{
+				oDatos.TermometroOnOff = 1;
+		   	}
+		   	if ( cValor == "0")
+		   	{
+				oDatos.TermometroOnOff = 0;
+		   	}
+			cValor = ReadVariable ("lOnOff");
+		   	if ( cValor == "1")
+		   	{
+				oDatos.lOnOff = 1;
+		   	}
+		   	if ( cValor == "0")
+		   	{
+				oDatos.lOnOff = 0;
+		   	} 
+			cValor = ReadVariable ("Alarma");
+		   	if ( cValor == "1")
+		   	{
+				oDatos.lEnableAlarma = 1;
+		   	}
+		   	if ( cValor == "0")
+		   	{
+				oDatos.lEnableAlarma = 0;
+		   	} 
+			PrintDatosSensor( oDatos );
+    	   return ( oDatos );
+    	}	
+    	/**
+    	******************************************************
+    	* @brief  Función que lee el contendo de una variable de Serverpic
+    	*
+    	* @param cVariable. Variable que se quiere leer
+    	*/
+		String ReadVariable (String cVariable)
+		{
+			long nMiliSegundos;
+    		String cLinea;                                                                              //Variable donde se almacenara informacio temporal
 	
-	}
-	void PrintDatosSensor (DataSensor oDatos )
-	{
-		Serial.print ("TermometroOnOff: ");		
-		Serial.println( oDatos.TermometroOnOff );	 
-		Serial.print ("Consigna: ");		
-		Serial.println(oDatos.Consigna);
-		Serial.print ("UmbralSuperiorTemperatura: ");
-		Serial.println(oDatos.UmbralSuperiorTemperatura);
-		Serial.print ("UmbralInferiorTemperatura: ");
-		Serial.println(oDatos.UmbralInferiorTemperatura);
-		Serial.print ("lTipoAlarmaTemperatura: ");
-		Serial.println(oDatos.lTipoAlarmaTemperatura);
-		Serial.print ("AlarmaUSTemperatura: ");
-		Serial.println(oDatos.AlarmaUSTemperatura);
-		Serial.print ("AlarmaUITemperatura: ");
-		Serial.println(oDatos.AlarmaUITemperatura);
-		Serial.print ("Offset: ");
-		Serial.println(oDatos.Offset);
-		Serial.print ("lEnableAlarma: ");
-		Serial.println( oDatos.lEnableAlarma );	 
-		Serial.print ("lAutomaticoManual: ");
-		Serial.println( oDatos.lAutomaticoManual );	
-		Serial.print ("lOnOff: ");		
-		Serial.println( oDatos.lOnOff );	 
-		Serial.print ("Alarma: ");		
-		Serial.println( oDatos.lEnableAlarma );	 
-	}
-	DataSensor ActualizaDatosSensor (DataSensor oDatos)
-	{
-		DataSensor oDatosTmp = oDatos;
-		float Temp;
-		boolean lTemp;
-/*
-		if ( oDatosTmp.TermometroOnOff !=  )
-		{
-//PENDIENTE			
-		}
-*/
-		Temp = Display.GetConsigna();
-		if ( oDatosTmp.Consigna != Temp)
-		{
-			oDatosTmp.Consigna = Temp;
-			MensajeServidor("save-:-Consigna-:-"+(String)Temp);
-		}
-		Temp = Display.GetTemperaturaMaximaAlarma();
-		if ( oDatosTmp.UmbralSuperiorTemperatura != Temp )
-		{
-			oDatosTmp.UmbralSuperiorTemperatura = Temp;
-			MensajeServidor("save-:-UmbralSuperiorTemperatura-:-"+(String)Temp);
-		}
-		Temp = Display.GetTemperaturaMinimaAlarma();
-		if ( oDatosTmp.UmbralInferiorTemperatura != Temp )
-		{
-			oDatosTmp.UmbralInferiorTemperatura = Temp;
-			MensajeServidor("save-:-UmbralInferiorTemperatura-:-"+(String)Temp);
-		}
-		Temp = Display.GetTemperaturaMinimaAlarma();
-		if ( oDatosTmp.UmbralInferiorTemperatura != Temp )
-		{
-			oDatosTmp.UmbralInferiorTemperatura = Temp;
-			MensajeServidor("save-:-UmbralInferiorTemperatura-:-"+(String)Temp);
-		}
-		Temp = Display.GetOffset();
-		if ( oDatosTmp.Offset != Temp )
-		{
-			oDatosTmp.Offset = Temp;
-			MensajeServidor("save-:-Offset-:-"+(String)Temp);
-		}		
-		
-		lTemp = Display.GetAutomaticoManual();
-		if (oDatosTmp.lAutomaticoManual != lTemp )
-		{
-			oDatosTmp.lAutomaticoManual = lTemp;
-			if (lTemp)
-			{
-				MensajeServidor("save-:-lAutomaticoManual-:-1");
-			}else{
-				MensajeServidor("save-:-lAutomaticoManual-:-0");
-			}	
-		}
-		lTemp = Display.GetOnOff();
-		if (oDatosTmp.lOnOff != lTemp )
-		{
-			oDatosTmp.lOnOff = lTemp;
-			if (lTemp)
-			{
-				MensajeServidor("save-:-lOnOff-:-1");
-			}else{
-				MensajeServidor("save-:-lOnOff-:-0");
-			}	
-		}		
-		return(oDatosTmp);
-	}
+			Cliente.print("load-:-");
+			Cliente.print(cVariable);
+			Cliente.print("\n");  
 
+			delay(200);
 
+			nMiliSegundos = millis ();
+			while ( !Cliente.available() && millis() < nMiliSegundos + 5000 ){}                         //Mientras recibamos datos del servidor
+			cLinea = Cliente.readStringUntil('\n');
+			return(cLinea);	
+		}
+    	/**
+    	******************************************************
+    	* @brief  Función que imprime por consola los datos de una estructura oDatos
+    	*
+    	* @param oDatos.- Estructura con los datos que se desean imprimir
+    	*/
+		void PrintDatosSensor (DataSensor oDatos )
+		{
+			Serial.print ("TermometroOnOff: ");		
+			Serial.println( oDatos.TermometroOnOff );	 
+			Serial.print ("Consigna: ");		
+			Serial.println(oDatos.Consigna);
+			Serial.print ("UmbralSuperiorTemperatura: ");
+			Serial.println(oDatos.UmbralSuperiorTemperatura);
+			Serial.print ("UmbralInferiorTemperatura: ");
+			Serial.println(oDatos.UmbralInferiorTemperatura);
+			Serial.print ("lTipoAlarmaTemperatura: ");
+			Serial.println(oDatos.lTipoAlarmaTemperatura);
+			Serial.print ("AlarmaUSTemperatura: ");
+			Serial.println(oDatos.AlarmaUSTemperatura);
+			Serial.print ("AlarmaUITemperatura: ");
+			Serial.println(oDatos.AlarmaUITemperatura);
+			Serial.print ("Offset: ");
+			Serial.println(oDatos.Offset);
+			Serial.print ("lEnableAlarma: ");
+			Serial.println( oDatos.lEnableAlarma );	 
+			Serial.print ("lAutomaticoManual: ");
+			Serial.println( oDatos.lAutomaticoManual );	
+			Serial.print ("lOnOff: ");		
+			Serial.println( oDatos.lOnOff );	 
+			Serial.print ("Alarma: ");		
+			Serial.println( oDatos.lEnableAlarma );	 
+		}
+
+		#ifdef Display18
+    		/**
+    		******************************************************
+    		* @brief  Función que compara la estructura de datos del dispositivo con los datos almacenados en el display
+			*
+    		* Compara todos los datos de la estructura de Datos pasada con la almacenada en pantalla, los datos que han variado en pantalla
+			* respecto a los pasados en la estructura los actualiza en el servidor
+			*
+    		* @param oDatos.- Estructura con los datos que se desean imprimir
+    		*/			
+			DataSensor ActualizaDatosSensor (DataSensor oDatos)
+			{
+				DataSensor oDatosTmp = oDatos;
+				float Temp;
+				boolean lTemp;
+/*		
+				if ( oDatosTmp.TermometroOnOff !=  )
+				{
+//PE		NDIENTE			
+				}
+*/		
+				Temp = Display.GetConsigna();
+				if ( oDatosTmp.Consigna != Temp)
+				{
+					oDatosTmp.Consigna = Temp;
+					MensajeServidor("save-:-Consigna-:-"+(String)Temp);
+				}
+				Temp = Display.GetTemperaturaMaximaAlarma();
+				if ( oDatosTmp.UmbralSuperiorTemperatura != Temp )
+				{
+					oDatosTmp.UmbralSuperiorTemperatura = Temp;
+					MensajeServidor("save-:-UmbralSuperiorTemperatura-:-"+(String)Temp);
+				}
+				Temp = Display.GetTemperaturaMinimaAlarma();
+				if ( oDatosTmp.UmbralInferiorTemperatura != Temp )
+				{
+					oDatosTmp.UmbralInferiorTemperatura = Temp;
+					MensajeServidor("save-:-UmbralInferiorTemperatura-:-"+(String)Temp);
+				}
+				Temp = Display.GetTemperaturaMinimaAlarma();
+				if ( oDatosTmp.UmbralInferiorTemperatura != Temp )
+				{
+					oDatosTmp.UmbralInferiorTemperatura = Temp;
+					MensajeServidor("save-:-UmbralInferiorTemperatura-:-"+(String)Temp);
+				}
+				Temp = Display.GetOffset();
+				if ( oDatosTmp.Offset != Temp )
+				{
+					oDatosTmp.Offset = Temp;
+					MensajeServidor("save-:-Offset-:-"+(String)Temp);
+				}		
+
+				lTemp = Display.GetAutomaticoManual();
+				if (oDatosTmp.lAutomaticoManual != lTemp )
+				{
+					oDatosTmp.lAutomaticoManual = lTemp;
+					if (lTemp)
+					{
+						MensajeServidor("save-:-lAutomaticoManual-:-1");
+					}else{
+						MensajeServidor("save-:-lAutomaticoManual-:-0");
+					}	
+				}
+				lTemp = Display.GetOnOff();
+				if (oDatosTmp.lOnOff != lTemp )
+				{
+					oDatosTmp.lOnOff = lTemp;
+					if (lTemp)
+					{
+						MensajeServidor("save-:-lOnOff-:-1");
+					}else{
+						MensajeServidor("save-:-lOnOff-:-0");
+					}	
+				}		
+				return(oDatosTmp);
+			}
+    		/**
+    		******************************************************
+    		* @brief  Función que visualliza los datos de la sonda en el display cuando el sensor esta habilitado
+			*
+			* @param nTemperatura.- Temperatura que se quiere visualizar
+    		* @param eDatosSensor.- Estructura con los daots del sensor
+    		*/					
+			void DisplayDatosSensor ( float nTemperatura,  DataSensor eDatosSensor )
+			{
+				if ( eDatosSensor.lEnableAlarma )
+				{
+					Display.DisplayMarcas (nTemperatura, eDatosSensor.Consigna,  eDatosSensor.UmbralSuperiorTemperatura, eDatosSensor.UmbralInferiorTemperatura);
+				}else{
+					Display.DisplayMarcas (nTemperatura, eDatosSensor.Consigna);
+				}
+				if ( eDatosSensor.lAutomaticoManual)
+				{
+					Display.WriteTxtManual();
+				}else{
+					Display.WriteTxtAutomatico();
+				}
+				Display.WriteTxtOffset(eDatosSensor.Offset);
+				if ( eDatosSensor.lOnOff )
+				{
+					Display.WriteTxtOff();
+				}else{
+					Display.WriteTxtOn();
+				}	
+			}
+	   		/**
+			******************************************************
+    		* @brief  Función que visualliza los datos de la sonda en el display cuando el sensor esta deshabilitado
+			*
+    		* @param eDatosSensor.- Estructura con los daots del sensor
+			*/
+			void DisplayDatosSensorOff ( DataSensor eDatosSensor )
+			{
+				Display.DisplayMarcas();
+			}		
+		#endif
+	#endif
 	#ifdef GA940_MPR121
-	
 
-		void DisplayDatosSensor ( float nTemperatura,  DataSensor eDatosSensor )
-		{
-
-			if ( eDatosSensor.lEnableAlarma )
-			{
-				Display.DisplayMarcas (nTemperatura, eDatosSensor.Consigna,  eDatosSensor.UmbralSuperiorTemperatura, eDatosSensor.UmbralInferiorTemperatura);
-			}else{
-				Display.DisplayMarcas (nTemperatura, eDatosSensor.Consigna);
-			}
-			if ( eDatosSensor.lAutomaticoManual)
-			{
-				Display.WriteTxtManual();
-			}else{
-				Display.WriteTxtAutomatico();
-			}
-			Display.WriteTxtOffset(eDatosSensor.Offset);
-			if ( eDatosSensor.lOnOff )
-			{
-				Display.WriteTxtOff();
-			}else{
-				Display.WriteTxtOn();
-			}	
-		}
-		void DisplayDatosSensorOff ( DataSensor eDatosSensor )
-		{
-			Display.DisplayMarcas();
-		}
 		void ICACHE_RAM_ATTR ScanPulsa (void)
 		{
     	  Serial.println("Interrupcion");
